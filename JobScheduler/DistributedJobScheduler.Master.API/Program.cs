@@ -8,6 +8,20 @@ var builder = WebApplication.CreateBuilder(args);
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
+object @lock = new object();
+
+Job item = new Job("Job 1: Wash dishes");
+Job item1 = new Job("Job 2: Clean your room");
+Job job1 = new Job("Job 3: Work on the garden");
+
+ConcurrentDictionary<Guid, Job> jobs = new();
+
+jobs.TryAdd(job1.Id, job1);
+jobs.TryAdd(item.Id, item);
+jobs.TryAdd(item1.Id, item1);
+
+builder.Services.AddSingleton(jobs);
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -18,42 +32,62 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-ConcurrentQueue<Job> jobs = new ConcurrentQueue<Job>();
-jobs.Enqueue(new Job("Job 1: Wash dishes"));
-jobs.Enqueue(new Job("Job 2: Clean your room"));
-jobs.Enqueue(new Job("Job 3: Work on the garden"));
 
-app.MapPost("/job", (JobRequest req) =>
+
+
+app.MapPost("/job", (JobRequest req, ConcurrentDictionary<Guid, Job> jobs) =>
     {
         Job job = new Job(req.Name);
-        jobs.Enqueue(job);
-        return job.Id;
+        if (!jobs.TryAdd(job.Id, job))
+        {
+            return Results.BadRequest($"Job {req.Name} already exists.");
+        }
+        return Results.Ok(job);
     })
     .WithName("SaveJob");
-app.MapGet("/job", () =>
+app.MapGet("/job", (ConcurrentDictionary<Guid, Job> jobs) =>
     {
-        if (jobs.TryDequeue(out var job)) 
+        lock (@lock)
         {
-            return Results.Ok(job);
+            Job? queuedJob = jobs.Values.FirstOrDefault(j => j.State == JobState.Queued);
+            if (queuedJob == null) 
+            {
+                return Results.NoContent();
+            }
+            Job assignedJob = queuedJob with { State = JobState.Assigned };
+            // if (!jobsDic.TryUpdate(assignedJob.Id, assignedJob, queuedJob))
+            // {
+            //     return Results.BadRequest($"This job, {assignedJob.Name}, is already assigned.");
+            // }
+            jobs[assignedJob.Id] = assignedJob;
+            return Results.Ok(assignedJob);
         }
-
-        return Results.NoContent();
     })
     .WithName("GetJob");
-app.MapPost("/result", (JobResult res) =>
+app.MapPost("/result", (JobResult res, ConcurrentDictionary<Guid, Job> jobs) =>
     {
+        if (!jobs.TryGetValue(res.JobId, out Job job))
+        {
+            return Results.BadRequest("You're so mean for trying to hack us");            
+        }
+        if (job.State == JobState.Completed)
+        {
+            return Results.BadRequest("Job is already completed.");
+        }
+        Job completedJob = job with { State = JobState.Completed };
+        jobs.TryUpdate(res.JobId, completedJob, job);
         if (res.Result)
         {
-            return "Thank you for your loyal service.";
+            return Results.Ok("Thank you for your loyal service.");
         }
 
-        return "You're a useless worker.";
+        return Results.Ok("You're a useless worker.");
     })
     .WithName("SaveResult");
 
 app.Run();
 
 
+public record JobRequest(string Name);
 
-record JobRequest(string Name);
-record JobResult(Guid JobId, bool Result, string ErrorMessage);
+public record JobResult(Guid JobId, bool Result, string ErrorMessage);
