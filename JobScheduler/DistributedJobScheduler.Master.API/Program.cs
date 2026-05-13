@@ -51,11 +51,10 @@ app.MapGet("/job", (ConcurrentDictionary<Guid, Job> jobs) =>
                 return Results.NoContent();
             }
             Job assignedJob = queuedJob with { State = JobState.Assigned };
-            // if (!jobsDic.TryUpdate(assignedJob.Id, assignedJob, queuedJob))
-            // {
-            //     return Results.BadRequest($"This job, {assignedJob.Name}, is already assigned.");
-            // }
-            jobs[assignedJob.Id] = assignedJob;
+            if (!jobs.TryUpdate(assignedJob.Id, assignedJob, queuedJob))
+            {
+                return Results.BadRequest($"This job, {assignedJob.Name}, is already assigned.");
+            }
             return Results.Ok(assignedJob);
         }
     })
@@ -72,7 +71,12 @@ app.MapPost("/result", (JobResult res, ConcurrentDictionary<Guid, Job> jobs) =>
         }
         if (!res.Result)
         {
-            return Results.BadRequest("Thank you for your loyal service, but you failed.");
+            Job failedJob = job with { State = JobState.Failed };
+            if (!jobs.TryUpdate(res.JobId, failedJob, job))
+            {
+                return Results.Ok(failedJob);
+            }    
+            return Results.BadRequest($"Job {res.JobId} already changed.");
         }
         Job completedJob = job with { State = JobState.Completed };
         if (!jobs.TryUpdate(res.JobId, completedJob, job))
