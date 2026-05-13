@@ -1,7 +1,6 @@
 using System.Collections.Concurrent;
 using DistributedJobScheduler.Shared;
 
-
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -31,9 +30,6 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
-
-
 
 app.MapPost("/job", (JobRequest req, ConcurrentDictionary<Guid, Job> jobs) =>
     {
@@ -74,14 +70,16 @@ app.MapPost("/result", (JobResult res, ConcurrentDictionary<Guid, Job> jobs) =>
         {
             return Results.BadRequest("Job is already completed.");
         }
-        Job completedJob = job with { State = JobState.Completed };
-        jobs.TryUpdate(res.JobId, completedJob, job);
-        if (res.Result)
+        if (!res.Result)
         {
-            return Results.Ok("Thank you for your loyal service.");
+            return Results.BadRequest("Thank you for your loyal service, but you failed.");
         }
-
-        return Results.Ok("You're a useless worker.");
+        Job completedJob = job with { State = JobState.Completed };
+        if (!jobs.TryUpdate(res.JobId, completedJob, job))
+        {
+            return Results.BadRequest($"Job {res.JobId} already changed.");
+        }
+        return Results.Ok(completedJob);
     })
     .WithName("SaveResult");
 
