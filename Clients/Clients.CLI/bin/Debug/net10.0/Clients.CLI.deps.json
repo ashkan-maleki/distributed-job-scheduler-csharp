@@ -1,0 +1,39 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v10.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v10.0": {
+      "Clients.CLI/1.0.0": {
+        "dependencies": {
+          "DistributedJobScheduler.Shared": "1.0.0"
+        },
+        "runtime": {
+          "Clients.CLI.dll": {}
+        }
+      },
+      "DistributedJobScheduler.Shared/1.0.0": {
+        "runtime": {
+          "DistributedJobScheduler.Shared.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      }
+    }
+  },
+  "libraries": {
+    "Clients.CLI/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "DistributedJobScheduler.Shared/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}
