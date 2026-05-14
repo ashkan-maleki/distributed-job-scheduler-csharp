@@ -59,6 +59,25 @@ app.MapGet("/job", (ConcurrentDictionary<Guid, Job> jobs) =>
         }
     })
     .WithName("GetJob");
+app.MapPost("/start", (Guid jobId, ConcurrentDictionary<Guid, Job> jobs) =>
+    {
+        if (!jobs.TryGetValue(jobId, out Job job))
+        {
+            return Results.BadRequest("You're so mean for trying to hack us");            
+        }
+        if (job.State != JobState.Assigned)
+        {
+            return Results.BadRequest("Job is in wrong state.");
+        }
+        
+        Job runningJob = job with { State = JobState.Running };
+        if (!jobs.TryUpdate(jobId, runningJob, job))
+        {
+            return Results.BadRequest($"Job {jobId} already changed.");
+        }
+        return Results.Ok(runningJob);
+    })
+    .WithName("StartJob");
 app.MapPost("/result", (JobResult res, ConcurrentDictionary<Guid, Job> jobs) =>
     {
         if (!jobs.TryGetValue(res.JobId, out Job job))
