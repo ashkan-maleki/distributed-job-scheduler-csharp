@@ -65,18 +65,18 @@ app.MapPost("/result", (JobResult res, ConcurrentDictionary<Guid, Job> jobs) =>
         {
             return Results.BadRequest("You're so mean for trying to hack us");            
         }
-        if (job.State == JobState.Completed)
+        if (job.State != JobState.Running)
         {
-            return Results.BadRequest("Job is already completed.");
+            return Results.BadRequest("Job is in wrong state.");
         }
         if (!res.Result)
         {
             Job failedJob = job with { State = JobState.Failed };
             if (!jobs.TryUpdate(res.JobId, failedJob, job))
             {
-                return Results.Ok(failedJob);
+                return Results.BadRequest($"Job {res.JobId} already changed.");
             }    
-            return Results.BadRequest($"Job {res.JobId} already changed.");
+            return Results.Ok(failedJob);
         }
         Job completedJob = job with { State = JobState.Completed };
         if (!jobs.TryUpdate(res.JobId, completedJob, job))
