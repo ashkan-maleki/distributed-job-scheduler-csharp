@@ -10,6 +10,12 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Shared", "Shared", "{63318D
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DistributedJobScheduler.Shared", "Shared\DistributedJobScheduler.Shared\DistributedJobScheduler.Shared.csproj", "{A7DA3700-4DFD-4031-91BC-7ED9EB81217E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Clients.CLI", "Clients\Clients.CLI\Clients.CLI.csproj", "{9894D0C5-502B-4E80-83FE-3216B5F00EE1}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{8A5F22BD-3B09-4157-8B8C-5155147D5672}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Worker.CLI", "src\Worker.CLI\Worker.CLI.csproj", "{DCB8A871-6A1D-4AAD-A76D-4FCFF49DBE9A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -18,6 +24,8 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{3888E47D-83A4-4671-8877-AABDCA6FE74C} = {F5A6CFA0-9C5A-473C-BE83-BCEE5E1CA5EC}
 		{A7DA3700-4DFD-4031-91BC-7ED9EB81217E} = {63318D94-AEE8-489A-9F14-944CA267513D}
+		{9894D0C5-502B-4E80-83FE-3216B5F00EE1} = {97766658-E863-42EE-B1A7-FAC5AB2092AD}
+		{DCB8A871-6A1D-4AAD-A76D-4FCFF49DBE9A} = {8A5F22BD-3B09-4157-8B8C-5155147D5672}
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{3888E47D-83A4-4671-8877-AABDCA6FE74C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
@@ -28,5 +36,13 @@ Global
 		{A7DA3700-4DFD-4031-91BC-7ED9EB81217E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A7DA3700-4DFD-4031-91BC-7ED9EB81217E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A7DA3700-4DFD-4031-91BC-7ED9EB81217E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9894D0C5-502B-4E80-83FE-3216B5F00EE1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9894D0C5-502B-4E80-83FE-3216B5F00EE1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9894D0C5-502B-4E80-83FE-3216B5F00EE1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9894D0C5-502B-4E80-83FE-3216B5F00EE1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DCB8A871-6A1D-4AAD-A76D-4FCFF49DBE9A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DCB8A871-6A1D-4AAD-A76D-4FCFF49DBE9A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DCB8A871-6A1D-4AAD-A76D-4FCFF49DBE9A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DCB8A871-6A1D-4AAD-A76D-4FCFF49DBE9A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
