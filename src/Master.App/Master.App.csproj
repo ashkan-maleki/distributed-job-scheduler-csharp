@@ -1,14 +1,13 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <OutputType>Exe</OutputType>
         <TargetFramework>net10.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\..\Shared\DistributedJobScheduler.Shared\DistributedJobScheduler.Shared.csproj" />
+      <ProjectReference Include="..\Master.Domain\Master.Domain.csproj" />
     </ItemGroup>
 
 </Project>

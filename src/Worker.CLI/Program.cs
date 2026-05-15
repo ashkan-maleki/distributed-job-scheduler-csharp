@@ -1,7 +1,7 @@
 ﻿// See https://aka.ms/new-console-template for more information
 
 using System.Net.Http.Json;
-using DistributedJobScheduler.Shared;
+using Shared.Domain.Models;
 
 Console.WriteLine("Welcome to Distributed Job Scheduler Worker CLI!");
 
@@ -10,6 +10,7 @@ HttpClient client = new()
     BaseAddress = new Uri("http://localhost:5031")
 };
 
+Guid workerId = Guid.NewGuid();
 bool start = true;
 
 while (start)
@@ -18,7 +19,7 @@ while (start)
     Console.WriteLine("I'm a worker and I want to get a job to work on it.");
     Console.WriteLine("Getting a job ...");
 
-    Job? assignedJob = await client.GetFromJsonAsync<Job>("/job");
+    Job? assignedJob = await client.GetFromJsonAsync<Job>($"/job?workerId={workerId}");
 
     Console.WriteLine(assignedJob);
 
@@ -28,7 +29,7 @@ while (start)
     Console.WriteLine("Running job ...");
 
 
-    HttpResponseMessage startResponse = await client.PostAsync($"/start?jobId={jobId}", null);
+    HttpResponseMessage startResponse = await client.PostAsync($"/job/start?jobId={jobId}&workerId={workerId}", null);
 
     startResponse.EnsureSuccessStatusCode();
 
@@ -39,12 +40,13 @@ while (start)
     Console.WriteLine("I'm a happy worker cause I completed a job and I want to report it to my master.");
     Console.WriteLine("Reporting a completed job ...");
 
-    JobResultRequest resultReq = new(runningJob!.Id, true, null);
+    JobResultRequest resultReq = new(runningJob!.Id, workerId, true, null);
 
-    HttpResponseMessage resultResponse = await client.PostAsJsonAsync("/result", resultReq);
+    HttpResponseMessage resultResponse = await client.PostAsJsonAsync("/job/result", resultReq);
 
-    resultResponse.EnsureSuccessStatusCode();
-
+    // resultResponse.EnsureSuccessStatusCode();
+    string json =  await resultResponse.Content.ReadAsStringAsync();
+    var j = json;
     Job? completedJob = await resultResponse.Content.ReadFromJsonAsync<Job>();
 
     Console.WriteLine(completedJob);
@@ -64,11 +66,4 @@ while (start)
 }
 
 
-public record JobResultRequest(Guid JobId, bool Result, string? ErrorMessage);
-
-public enum Order
-{
-    Assign=1,
-    Start,
-    Complete,
-}
+public record JobResultRequest(Guid JobId, Guid WorkerId, bool Result, string? ErrorMessage);

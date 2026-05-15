@@ -1,5 +1,7 @@
-using System.Collections.Concurrent;
-using DistributedJobScheduler.Shared;
+using Master.App.Stores;
+using Master.Domain.Aggregates;
+using Master.Domain.Stores;
+using Shared.Domain.Failures;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -8,19 +10,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddOpenApi();
 builder.Services.AddSwaggerGen();
 
-object @lock = new object();
-
-Job item = new Job("Job 1: Wash dishes");
-Job item1 = new Job("Job 2: Clean your room");
-Job job1 = new Job("Job 3: Work on the garden");
-
-ConcurrentDictionary<Guid, Job> jobs = new();
-
-jobs.TryAdd(job1.Id, job1);
-jobs.TryAdd(item.Id, item);
-jobs.TryAdd(item1.Id, item1);
-
-builder.Services.AddSingleton(jobs);
+builder.Services.AddSingleton<IJobStore, JobStore>();
 
 
 var app = builder.Build();
@@ -35,84 +25,75 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-app.MapPost("/job", (JobRequest req, ConcurrentDictionary<Guid, Job> jobs) =>
+app.MapPost("/job", (JobRequest req, IJobStore jobStore) =>
     {
-        Job job = new Job(req.Name);
-        if (!jobs.TryAdd(job.Id, job))
+        (IError? error, Job? job) = jobStore.TryQueueJob(req.Name);
+        if (error is not null)
         {
-            return Results.BadRequest($"Job {req.Name} already exists.");
+            return Results.BadRequest(error.ToString());
         }
         return Results.Ok(job);
     })
     .WithName("SaveJob");
-app.MapGet("/job", (ConcurrentDictionary<Guid, Job> jobs) =>
+app.MapGet("/job", (Guid workerId, IJobStore jobStore) =>
     {
-        lock (@lock)
+        (IError? error, Job? job) = jobStore.TryAssignJob(workerId);
+        if (error is not null && error.Is<JobStoreNotFoundError>()) 
         {
-            Job? queuedJob = jobs.Values.FirstOrDefault(j => j.State == JobState.Queued);
-            if (queuedJob == null) 
-            {
-                return Results.NoContent();
-            }
-            Job assignedJob = queuedJob with { State = JobState.Assigned };
-            if (!jobs.TryUpdate(assignedJob.Id, assignedJob, queuedJob))
-            {
-                return Results.BadRequest($"This job, {assignedJob.Name}, is already assigned.");
-            }
-            return Results.Ok(assignedJob);
+            return Results.NotFound(error.ToString());
         }
+
+        if (error is not null && (error.As<Job>() || error.Is<JobStoreOperationError>()))
+        {
+            return Results.BadRequest(error.ToString());
+        }
+        return Results.Ok(job);
     })
     .WithName("GetJob");
-app.MapPost("/start", (Guid jobId, ConcurrentDictionary<Guid, Job> jobs) =>
+app.MapPost("job/start", (Guid jobId, Guid workerId, IJobStore jobStore) =>
     {
-        if (!jobs.TryGetValue(jobId, out Job job))
+        (IError? error, Job? job) = jobStore.TryStartJob(jobId, workerId);
+        if (error is not null && error.Is<JobStoreNotFoundError>()) 
         {
-            return Results.BadRequest("You're so mean for trying to hack us");            
+            return Results.NotFound(error.ToString());
         }
-        if (job.State != JobState.Assigned)
+
+        if (error is not null && (error.As<Job>() || error.Is<JobStoreOperationError>()))
         {
-            return Results.BadRequest("Job is in wrong state.");
+            return Results.BadRequest(error.ToString());
         }
-        
-        Job runningJob = job with { State = JobState.Running };
-        if (!jobs.TryUpdate(jobId, runningJob, job))
-        {
-            return Results.BadRequest($"Job {jobId} already changed.");
-        }
-        return Results.Ok(runningJob);
+        return Results.Ok(job);
     })
     .WithName("StartJob");
-app.MapPost("/result", (JobResult res, ConcurrentDictionary<Guid, Job> jobs) =>
+app.MapPost("job/result", (JobResult res, IJobStore jobStore) =>
     {
-        if (!jobs.TryGetValue(res.JobId, out Job job))
+        IError? err = null;
+        Job? job = null;
+        
+        if (!res.Successful)
         {
-            return Results.BadRequest("You're so mean for trying to hack us");            
+            (err, job) = jobStore.TryFailJob(res.JobId, res.WorkerId);
         }
-        if (job.State != JobState.Running)
+        else
         {
-            return Results.BadRequest("Job is in wrong state.");
+            (err, job) = jobStore.TryCompleteJob(res.JobId, res.WorkerId);
         }
-        if (!res.Result)
+        
+        if (err is not null && err.Is<JobStoreNotFoundError>()) 
         {
-            Job failedJob = job with { State = JobState.Failed };
-            if (!jobs.TryUpdate(res.JobId, failedJob, job))
-            {
-                return Results.BadRequest($"Job {res.JobId} already changed.");
-            }    
-            return Results.Ok(failedJob);
+            return Results.NotFound(err.ToString());
         }
-        Job completedJob = job with { State = JobState.Completed };
-        if (!jobs.TryUpdate(res.JobId, completedJob, job))
+
+        if (err is not null && (err.As<Job>() || err.Is<JobStoreOperationError>()))
         {
-            return Results.BadRequest($"Job {res.JobId} already changed.");
+            return Results.BadRequest(err.ToString());
         }
-        return Results.Ok(completedJob);
+        return Results.Ok(job);
+        
     })
     .WithName("SaveResult");
 
 app.Run();
 
-
 public record JobRequest(string Name);
-
-public record JobResult(Guid JobId, bool Result, string ErrorMessage);
+public record JobResult(Guid JobId, Guid WorkerId, bool Successful, string ErrorMessage);
