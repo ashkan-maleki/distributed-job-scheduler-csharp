@@ -12,7 +12,6 @@ public class JobService(HttpClient client)
         // Console.WriteLine("Please enter a job name:");
         // string? jobName = Console.ReadLine();
         Faker faker = new();
-
         string jobName = faker.Commerce.Product();
         if (jobName is null)
         {
@@ -29,18 +28,18 @@ public class JobService(HttpClient client)
             await createResponse.Content.ReadFromJsonAsync<Job>();
 
         Console.WriteLine(createdJob);
-
     }
     
     public async Task All()
     {
-        List<Job>? jobs = await client.GetFromJsonAsync<List<Job>>("/api/job/all");
-
-        if (jobs is null)
+        HttpResponseMessage httpResponseMessage = await client.GetAsync("/api/job/all");
+        if (httpResponseMessage.StatusCode == System.Net.HttpStatusCode.NoContent)
         {
-            Console.WriteLine("No jobs found");
+            Console.WriteLine("No jobs found");    
+            return;
         }
         
+        List<Job>? jobs = await httpResponseMessage.Content.ReadFromJsonAsync<List<Job>>();
         foreach (Job job in jobs)
         {
             Console.WriteLine(job);

@@ -8,11 +8,14 @@ public record Job(string Name)
 {
     public Guid Id { get; init; } = Guid.NewGuid();
     public JobState State { get; init; } = JobState.Queued;
-    public Worker? Worker { get; init; }
-    public Guid? WorkerId => Worker?.Id;
-    public Job Assign(Worker worker)
+    public Guid? WorkerId { get; init; }
+    public (IError?, Job?) Assign(Guid workerId)
     {
-        return this with { State = JobState.Assigned, Worker = worker};
+        if (State != JobState.Queued)
+        {
+            return new(new JobError("Job is in wrong state."), null);
+        }   
+        return new (null, this with { State = JobState.Assigned, WorkerId = workerId});
     }
 
     public (IError?, Job?) TryStart(Guid workerId)

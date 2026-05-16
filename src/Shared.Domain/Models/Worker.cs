@@ -1,3 +1,3 @@
 ﻿namespace Shared.Domain.Models;
 
-public record Worker(Guid Id);
+public record Worker(Guid Id, string Name);

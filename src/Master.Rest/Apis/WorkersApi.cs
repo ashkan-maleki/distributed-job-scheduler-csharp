@@ -15,17 +15,19 @@ public static class WorkersApi
         return app;
     }
 
-    private static async Task<Results<Ok, BadRequest<string>>> ScaleWorkers(HttpContext context, IWorkerService workerService, ScaleWorkersRequest scaleWorkersRequest)
+    private static async Task<Results<Ok, BadRequest<string>>> 
+        ScaleWorkers(HttpContext context, IWorkerService workerService, ScaleWorkersRequest scaleWorkersRequest)
     {
         IError? error = workerService.TryScale(scaleWorkersRequest.Count);
-        if (error == null)
+        if (error != null)
         {
             return TypedResults.BadRequest(error.ToString());
         }
         return TypedResults.Ok();
     }
 
-    private static async Task<Results<Ok<List<Worker>>, NoContent>> AllWorkers(HttpContext context, IWorkerService workerService)
+    private static async Task<Results<Ok<List<Worker>>, NoContent>> 
+        AllWorkers(HttpContext context, IWorkerService workerService)
     {
         List<Worker> workers = workerService.Workers;
         if (!workers.Any())

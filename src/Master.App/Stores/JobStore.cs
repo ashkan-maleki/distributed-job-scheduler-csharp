@@ -15,7 +15,7 @@ public class JobStore : IJobStore
         Job item = new Job("Job 1: Wash dishes");
         Job item1 = new Job("Job 2: Clean your room");
         Job job1 = new Job("Job 3: Work on the garden");
-
+        
         jobs.TryAdd(job1.Id, job1);
         jobs.TryAdd(item.Id, item);
         jobs.TryAdd(item1.Id, item1);

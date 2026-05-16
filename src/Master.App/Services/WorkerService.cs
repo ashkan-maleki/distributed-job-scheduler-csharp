@@ -1,4 +1,5 @@
-﻿using Master.Domain.Models;
+﻿using Bogus;
+using Master.Domain.Models;
 using Master.Domain.Services;
 using Master.Domain.Stores;
 using Shared.Domain.Failures;
@@ -13,28 +14,29 @@ public class WorkerService(IWorkerStore workerStore) : IWorkerService
         if (workerStore.WorkersCount < count)
         {
             List<Worker> workers = new();
-            for (int i = 0; i < workerStore.WorkersCount - count; i++)
+            Faker faker = new();
+            for (int i = 0; i < count - workerStore.WorkersCount; i++)
             {
-                workers.Add(new Worker("hi"));
+                workers.Add(new Worker(faker.Company.CompanyName()));
             }
             
-            IError? err = workerStore.TryAddWorkerRange(workers);
-            if (err != null)
+            IError? error = workerStore.TryAddWorkerRange(workers);
+            if (error != null)
             {
-                return err;
+                return error;
             }
         }
         while (workerStore.WorkersCount > count)
         {
-            (IError? err, Worker? worker) = workerStore.TryFirstWorker();
-            if (err != null)
+            (IError? error, Worker? worker) = workerStore.TryFirstWorker();
+            if (error != null)
             {
-                return err;
+                return error;
             }
-            err = workerStore.TryRemoveWorker(worker!);
-            if (err != null)
+            error = workerStore.TryRemoveWorker(worker!);
+            if (error != null)
             {
-                return err;
+                return error;
             }
         }
         return null;

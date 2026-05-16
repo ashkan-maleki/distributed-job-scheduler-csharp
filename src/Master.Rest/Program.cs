@@ -13,7 +13,9 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddHealthChecks();
 
+builder.Services.AddSingleton<IWorkerStore, WorkerStore>();
 builder.Services.AddSingleton<IJobStore, JobStore>();
+builder.Services.AddScoped<IWorkerService, WorkerService>();
 builder.Services.AddScoped<IJobService, JobService>();
 
 

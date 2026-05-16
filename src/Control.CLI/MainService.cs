@@ -39,6 +39,7 @@ public class MainService(HttpClient client)
     {
         string? input = Console.ReadLine();
         JobService jobService = new (client);
+        WorkerService workerService = new (client);
         if (input == "q")
         {
             return false;
@@ -50,6 +51,14 @@ public class MainService(HttpClient client)
         if (input == "job all")
         {
             await jobService.All();
+        }
+        if (input == "worker all")
+        {
+            await workerService.All();
+        }
+        if (input == "worker scale")
+        {
+            await workerService.Scale();
         }
         return true;
     }

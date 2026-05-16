@@ -34,8 +34,12 @@ public class JobService(IJobStore jobStore, IWorkerStore workerStore) : IJobServ
         {
             return new(error, null);
         }
-        Job assignedJob = queuedJob!.Assign(worker!);
-        error = jobStore.TryUpdateJob(assignedJob, queuedJob);
+        (error, Job? assignedJob) = queuedJob!.Assign(workerId);
+        if (error is not null)
+        {
+            return new(error, null);
+        }
+        error = jobStore.TryUpdateJob(assignedJob!, queuedJob);
         if (error is not null)
         {
             return new(error, null);

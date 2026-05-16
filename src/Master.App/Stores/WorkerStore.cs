@@ -1,4 +1,5 @@
-﻿using Master.Domain.Models;
+﻿using System.Collections.Concurrent;
+using Master.Domain.Models;
 using Master.Domain.Stores;
 using Shared.Domain.Failures;
 
@@ -6,7 +7,7 @@ namespace Master.App.Stores;
 
 public class WorkerStore : IWorkerStore
 {
-    private readonly Dictionary<Guid, Worker> _workers = new();
+    private readonly ConcurrentDictionary<Guid, Worker> _workers = new();
 
     public List<Worker> Workers => _workers.Values.ToList();
     public int WorkersCount => _workers.Count;
@@ -23,7 +24,7 @@ public class WorkerStore : IWorkerStore
 
     public IError? TryRemoveWorker(Worker worker)
     {
-        if (!_workers.Remove(worker.Id))
+        if (!_workers.Remove(worker.Id, out _))
         {
             return new WorkerStoreOperationError($"The worker with this Id ({worker.Id}) did not exist.");
         }
