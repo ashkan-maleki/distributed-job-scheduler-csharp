@@ -1,3 +1,8 @@
-﻿namespace Master.Domain.Models;
+﻿using Master.Domain.Aggregates;
 
-public record Worker(Guid Id);
+namespace Master.Domain.Models;
+
+public record Worker(string Name, Job? Job = null)
+{
+    public Guid Id { get; init; } = Guid.NewGuid();
+}

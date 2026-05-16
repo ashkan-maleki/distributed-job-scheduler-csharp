@@ -1,29 +1,24 @@
 ﻿// See https://aka.ms/new-console-template for more information
-using System.Net.Http.Json;
-using Shared.Domain.Models;
 
-Console.WriteLine("Welcome to Distributed Job Scheduler Client ClI!");
+using Control.CLI;
+
+Console.WriteLine("Welcome to Control Plane!");
+
 HttpClient client = new()
 {
     BaseAddress = new Uri("http://localhost:5031")
 };
 
-Console.WriteLine("Please enter a job name:");
-string? jobName = Console.ReadLine();
-if (jobName is null)
+MainService mainService = new (client);
+if (!await mainService.CheckMasterAvailability())
 {
-    jobName = "Job 4: Test the app";
+    return;
 }
-JobRequest createReq = new(jobName);
 
-HttpResponseMessage createResponse =
-    await client.PostAsJsonAsync("/job", createReq);
+while (await mainService.Program())
+{
+    
+}
 
-createResponse.EnsureSuccessStatusCode();
-
-Job? createdJob =
-    await createResponse.Content.ReadFromJsonAsync<Job>();
-
-Console.WriteLine(createdJob);
 
 public record JobRequest(string Name);

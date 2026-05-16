@@ -5,11 +5,12 @@ namespace Master.Domain.Stores;
 
 public interface IJobStore
 {
-    public (IError?, Job?) TryQueueJob(string name);
-    public (IError?, Job?) TryAssignJob(Guid workerId);
-    public (IError?, Job?) TryStartJob(Guid jobId, Guid workerId);
-    public (IError?, Job?) TryCompleteJob(Guid jobId, Guid workerId);
-    public (IError?, Job?) TryFailJob(Guid jobId, Guid workerId);
+    public List<Job> Jobs { get; }
+
+    public IError? TryAddJob(Job job);
+    public (IError?, Job?) TryDequeueJob();
+    public IError? TryUpdateJob(Job newJob, Job oldJob);
+    public (IError?, Job?) TryGetJob(Guid jobId);
 }
 
 public class JobStoreOperationError(string message) : Error<IJobStore>(message);

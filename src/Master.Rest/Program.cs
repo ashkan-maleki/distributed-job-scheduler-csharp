@@ -1,7 +1,8 @@
+using Master.App.Services;
 using Master.App.Stores;
-using Master.Domain.Aggregates;
+using Master.Domain.Services;
 using Master.Domain.Stores;
-using Shared.Domain.Failures;
+using Master.Rest.Apis;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,7 +11,10 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddOpenApi();
 builder.Services.AddSwaggerGen();
 
+builder.Services.AddHealthChecks();
+
 builder.Services.AddSingleton<IJobStore, JobStore>();
+builder.Services.AddScoped<IJobService, JobService>();
 
 
 var app = builder.Build();
@@ -25,73 +29,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-app.MapPost("/job", (JobRequest req, IJobStore jobStore) =>
-    {
-        (IError? error, Job? job) = jobStore.TryQueueJob(req.Name);
-        if (error is not null)
-        {
-            return Results.BadRequest(error.ToString());
-        }
-        return Results.Ok(job);
-    })
-    .WithName("SaveJob");
-app.MapGet("/job", (Guid workerId, IJobStore jobStore) =>
-    {
-        (IError? error, Job? job) = jobStore.TryAssignJob(workerId);
-        if (error is not null && error.Is<JobStoreNotFoundError>()) 
-        {
-            return Results.NotFound(error.ToString());
-        }
-
-        if (error is not null && (error.As<Job>() || error.Is<JobStoreOperationError>()))
-        {
-            return Results.BadRequest(error.ToString());
-        }
-        return Results.Ok(job);
-    })
-    .WithName("GetJob");
-app.MapPost("job/start", (Guid jobId, Guid workerId, IJobStore jobStore) =>
-    {
-        (IError? error, Job? job) = jobStore.TryStartJob(jobId, workerId);
-        if (error is not null && error.Is<JobStoreNotFoundError>()) 
-        {
-            return Results.NotFound(error.ToString());
-        }
-
-        if (error is not null && (error.As<Job>() || error.Is<JobStoreOperationError>()))
-        {
-            return Results.BadRequest(error.ToString());
-        }
-        return Results.Ok(job);
-    })
-    .WithName("StartJob");
-app.MapPost("job/result", (JobResult res, IJobStore jobStore) =>
-    {
-        IError? err = null;
-        Job? job = null;
-        
-        if (!res.Successful)
-        {
-            (err, job) = jobStore.TryFailJob(res.JobId, res.WorkerId);
-        }
-        else
-        {
-            (err, job) = jobStore.TryCompleteJob(res.JobId, res.WorkerId);
-        }
-        
-        if (err is not null && err.Is<JobStoreNotFoundError>()) 
-        {
-            return Results.NotFound(err.ToString());
-        }
-
-        if (err is not null && (err.As<Job>() || err.Is<JobStoreOperationError>()))
-        {
-            return Results.BadRequest(err.ToString());
-        }
-        return Results.Ok(job);
-        
-    })
-    .WithName("SaveResult");
+app.MapGroup("/api").MapJobsApi().MapWorkersApi().MapHealthChecks("/hc");
 
 app.Run();
 

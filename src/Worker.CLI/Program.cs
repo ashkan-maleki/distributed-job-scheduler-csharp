@@ -15,11 +15,10 @@ bool start = true;
 
 while (start)
 {
-
     Console.WriteLine("I'm a worker and I want to get a job to work on it.");
     Console.WriteLine("Getting a job ...");
 
-    Job? assignedJob = await client.GetFromJsonAsync<Job>($"/job?workerId={workerId}");
+    Job? assignedJob = await client.GetFromJsonAsync<Job>($"/api/job?workerId={workerId}");
 
     Console.WriteLine(assignedJob);
 
@@ -29,7 +28,7 @@ while (start)
     Console.WriteLine("Running job ...");
 
 
-    HttpResponseMessage startResponse = await client.PostAsync($"/job/start?jobId={jobId}&workerId={workerId}", null);
+    HttpResponseMessage startResponse = await client.PostAsync($"/api/job/start?jobId={jobId}&workerId={workerId}", null);
 
     startResponse.EnsureSuccessStatusCode();
 
@@ -42,7 +41,7 @@ while (start)
 
     JobResultRequest resultReq = new(runningJob!.Id, workerId, true, null);
 
-    HttpResponseMessage resultResponse = await client.PostAsJsonAsync("/job/result", resultReq);
+    HttpResponseMessage resultResponse = await client.PostAsJsonAsync("/api/job/result", resultReq);
 
     // resultResponse.EnsureSuccessStatusCode();
     string json =  await resultResponse.Content.ReadAsStringAsync();

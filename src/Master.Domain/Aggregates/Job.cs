@@ -1,13 +1,20 @@
-﻿using Shared.Domain.Failures;
+﻿using Master.Domain.Models;
+using Shared.Domain.Failures;
 
 namespace Master.Domain.Aggregates;
 
 
-public record Job(string Name, Guid? WorkerId = null)
+public record Job(string Name)
 {
     public Guid Id { get; init; } = Guid.NewGuid();
     public JobState State { get; init; } = JobState.Queued;
-    public Job Assign(Guid workerId) => this with { State = JobState.Assigned, WorkerId = workerId };
+    public Worker? Worker { get; init; }
+    public Guid? WorkerId => Worker?.Id;
+    public Job Assign(Worker worker)
+    {
+        return this with { State = JobState.Assigned, Worker = worker};
+    }
+
     public (IError?, Job?) TryStart(Guid workerId)
     {
         if (WorkerId != workerId)
