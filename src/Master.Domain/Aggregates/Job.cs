@@ -1,21 +1,25 @@
-﻿using Master.Domain.Models;
+﻿using System.ComponentModel.DataAnnotations;
 using Shared.Domain.Failures;
 
 namespace Master.Domain.Aggregates;
 
 
-public record Job(string Name)
+public record Job(string Name, long Version = 1)
 {
     public Guid Id { get; init; } = Guid.NewGuid();
     public JobState State { get; init; } = JobState.Queued;
     public Guid? WorkerId { get; init; }
+    // [Timestamp]
+    // public byte[] Version { get; set; }
+    public long Version { get; set; } = Version;
+
     public (IError?, Job?) Assign(Guid workerId)
     {
         if (State != JobState.Queued)
         {
             return new(new JobError("Job is in wrong state."), null);
         }   
-        return new (null, this with { State = JobState.Assigned, WorkerId = workerId});
+        return new (null, this with { State = JobState.Assigned, WorkerId = workerId, Version =  Version + 1});
     }
 
     public (IError?, Job?) TryStart(Guid workerId)
@@ -30,7 +34,7 @@ public record Job(string Name)
             return new(new JobError("Job is in wrong state."), null);
         }
 
-        Job job = this with { State = JobState.Running };
+        Job job = this with { State = JobState.Running, Version =  Version + 1 };
         return new(null, job);
     }
     
@@ -46,7 +50,7 @@ public record Job(string Name)
             return new(new JobError("Job is in wrong state."), null);
         }
 
-        Job job = this with { State = JobState.Completed };
+        Job job = this with { State = JobState.Completed, Version =  Version + 1 };
         return new(null, job);
     }
     
@@ -62,7 +66,7 @@ public record Job(string Name)
             return new(new JobError("Job is in wrong state."), null);
         }
 
-        Job job = this with { State = JobState.Failed };
+        Job job = this with { State = JobState.Failed, Version =  Version + 1 };
         return new(null, job);
     }
 }

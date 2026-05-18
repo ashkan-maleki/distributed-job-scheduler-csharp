@@ -81,3 +81,8 @@ temp/
 
 # Generated files
 Generated/
+
+# SQLite DB files
+*.db
+*.db-shm
+*.db-wal

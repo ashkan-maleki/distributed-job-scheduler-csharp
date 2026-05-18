@@ -6,5 +6,5 @@ namespace Master.Domain.Services;
 public interface IWorkerService
 {
     public List<Worker> Workers { get; }
-    public IError? TryScale(int count);
+    public Task<IError?> Scale(int count);
 }

@@ -1,8 +1,10 @@
+using Master.App.EF;
+using Master.App.Repositories;
 using Master.App.Services;
-using Master.App.Stores;
+using Master.Domain.Repositories;
 using Master.Domain.Services;
-using Master.Domain.Stores;
 using Master.Rest.Apis;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,8 +15,9 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddHealthChecks();
 
-builder.Services.AddSingleton<IWorkerStore, WorkerStore>();
-builder.Services.AddSingleton<IJobStore, JobStore>();
+builder.Services.AddDbContext<SchedulerDbContext>(options => { options.UseSqlite("Data Source=scheduler.db"); });
+builder.Services.AddScoped<IWorkerRepository, WorkerRepository>();
+builder.Services.AddScoped<IJobRepository, JobRepository>();
 builder.Services.AddScoped<IWorkerService, WorkerService>();
 builder.Services.AddScoped<IJobService, JobService>();
 

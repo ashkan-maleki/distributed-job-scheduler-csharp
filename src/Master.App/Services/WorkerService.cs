@@ -1,43 +1,43 @@
 ﻿using Bogus;
 using Master.Domain.Models;
+using Master.Domain.Repositories;
 using Master.Domain.Services;
-using Master.Domain.Stores;
 using Shared.Domain.Failures;
 
 namespace Master.App.Services;
 
-public class WorkerService(IWorkerStore workerStore) : IWorkerService
+public class WorkerService(IWorkerRepository workerRepository) : IWorkerService
 {
-    public List<Worker> Workers => workerStore.Workers;
-    public IError? TryScale(int count)
+    public List<Worker> Workers => workerRepository.Workers;
+    public async Task<IError?> Scale(int count)
     {
-        if (workerStore.WorkersCount < count)
+        IError? error = null;
+        Faker faker = new();
+        for (int i = 0; i < count - workerRepository.WorkersCount; i++)
         {
-            List<Worker> workers = new();
-            Faker faker = new();
-            for (int i = 0; i < count - workerStore.WorkersCount; i++)
-            {
-                workers.Add(new Worker(faker.Company.CompanyName()));
-            }
-            
-            IError? error = workerStore.TryAddWorkerRange(workers);
+            error =  await workerRepository.AddAsync(new Worker(faker.Company.CompanyName()));
             if (error != null)
             {
                 return error;
             }
         }
-        while (workerStore.WorkersCount > count)
+        while (workerRepository.WorkersCount > count)
         {
-            (IError? error, Worker? worker) = workerStore.TryFirstWorker();
+            (error, Worker? worker) = await workerRepository.FirstAsync();
             if (error != null)
             {
                 return error;
             }
-            error = workerStore.TryRemoveWorker(worker!);
+            error = await workerRepository.RemoveAsync(worker!);
             if (error != null)
             {
                 return error;
             }
+        }
+        error = await workerRepository.UnitOfWork.SaveEntitiesAsync();
+        if (error != null)
+        {
+            return error;
         }
         return null;
     }

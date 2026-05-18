@@ -18,7 +18,7 @@ public static class WorkersApi
     private static async Task<Results<Ok, BadRequest<string>>> 
         ScaleWorkers(HttpContext context, IWorkerService workerService, ScaleWorkersRequest scaleWorkersRequest)
     {
-        IError? error = workerService.TryScale(scaleWorkersRequest.Count);
+        IError? error = await workerService.Scale(scaleWorkersRequest.Count);
         if (error != null)
         {
             return TypedResults.BadRequest(error.ToString());

@@ -5,10 +5,10 @@ namespace Master.Domain.Services;
 
 public interface IJobService
 {
-    public (IError?, Job?) TryQueueJob(string name);
-    public (IError?, Job?) TryAssignJob(Guid workerId);
-    public (IError?, Job?) TryStartJob(Guid jobId, Guid workerId);
-    public (IError?, Job?) TryCompleteJob(Guid jobId, Guid workerId);
-    public (IError?, Job?) TryFailJob(Guid jobId, Guid workerId);
+    public Task<(IError?, Job?)> QueueJob(string name);
+    public Task<(IError?, Job?)> AssignJob(Guid workerId);
+    public Task<(IError?, Job?)> StartJob(Guid jobId, Guid workerId);
+    public Task<(IError?, Job?)> CompleteJob(Guid jobId, Guid workerId);
+    public Task<(IError?, Job?)> FailJob(Guid jobId, Guid workerId);
     public List<Job> Jobs { get; }
 }

@@ -1,19 +1,24 @@
 ﻿using Master.Domain.Aggregates;
 using Master.Domain.Models;
+using Master.Domain.Repositories;
 using Master.Domain.Services;
-using Master.Domain.Stores;
 using Shared.Domain.Failures;
 
 namespace Master.App.Services;
 
-public class JobService(IJobStore jobStore, IWorkerStore workerStore) : IJobService
+public class JobService(IJobRepository jobRepository, IWorkerRepository workerRepository) : IJobService
 {
-    public List<Job> Jobs => jobStore.Jobs;
+    public List<Job> Jobs => jobRepository.Jobs;
 
-    public (IError?, Job?) TryQueueJob(string name)
+    public async Task<(IError?, Job?)> QueueJob(string name)
     {
         Job job = new Job(name);
-        IError? error = jobStore.TryAddJob(job);
+        IError? error = await jobRepository.AddAsync(job);
+        if (error is not null)
+        {
+            return new(error, null);
+        }
+        error = await jobRepository.UnitOfWork.SaveEntitiesAsync();
         if (error is not null)
         {
             return new(error, null);
@@ -21,15 +26,15 @@ public class JobService(IJobStore jobStore, IWorkerStore workerStore) : IJobServ
         return new(null, job);
     }
 
-    public (IError?, Job?) TryAssignJob(Guid workerId)
+    public async Task<(IError?, Job?)> AssignJob(Guid workerId)
     {
-        (IError? error, Job? queuedJob) = jobStore.TryDequeueJob();
+        (IError? error, Job? queuedJob) = await jobRepository.DequeueAsync();
         if (error is not null)
         {
             return new(error, null);
         }
 
-        (error, Worker? worker) = workerStore.TryGetWorker(workerId);
+        (error, Worker? worker) = await workerRepository.GetAsync(workerId);
         if (error is not null)
         {
             return new(error, null);
@@ -39,7 +44,7 @@ public class JobService(IJobStore jobStore, IWorkerStore workerStore) : IJobServ
         {
             return new(error, null);
         }
-        error = jobStore.TryUpdateJob(assignedJob!, queuedJob);
+        error = await jobRepository.UnitOfWork.SaveEntitiesAsync();
         if (error is not null)
         {
             return new(error, null);
@@ -47,67 +52,64 @@ public class JobService(IJobStore jobStore, IWorkerStore workerStore) : IJobServ
         return new(null, assignedJob);
     }
 
-    public (IError?, Job?) TryStartJob(Guid jobId, Guid workerId)
+    public async Task<(IError?, Job?)> StartJob(Guid jobId, Guid workerId)
     {
-        IError? err;
-        (err, Job? job) = jobStore.TryGetJob(jobId);
-        if (err is not null)
+        (IError? error, Job? job) = await jobRepository.GetAsync(jobId);
+        if (error is not null)
         {
-            return new(err, null);
+            return new(error, null);
         }
-        (err, Job? runningJob) = job.TryStart(workerId);
-        if (err is not null)
+        (error, Job? runningJob) = job.TryStart(workerId);
+        if (error is not null)
         {
-            return new(err, null);
+            return new(error, null);
         }
-        err = jobStore.TryUpdateJob(runningJob!, job);
-        if (err is not null)
+        error = await jobRepository.UnitOfWork.SaveEntitiesAsync();
+        if (error is not null)
         {
-            return new(err, null);
+            return new(error, null);
         }
         return new(null, runningJob);
     }
 
-    public (IError?, Job?) TryCompleteJob(Guid jobId, Guid workerId)
+    public async Task<(IError?, Job?)> CompleteJob(Guid jobId, Guid workerId)
     {
-        IError? err;
-        (err, Job? job) = jobStore.TryGetJob(jobId);
-        if (err is not null)
+        (IError? error, Job? job) = await jobRepository.GetAsync(jobId);
+        if (error is not null)
         {
-            return new(err, null);
+            return new(error, null);
         }
 
-        (err, Job? completedJob) = job.TryComplete(workerId);
-        if (err is not null)
+        (error, Job? completedJob) = job.TryComplete(workerId);
+        if (error is not null)
         {
-            return new(err, null);
+            return new(error, null);
         }
-        err = jobStore.TryUpdateJob(completedJob!, job);
-        if (err is not null)
+        error = await jobRepository.UnitOfWork.SaveEntitiesAsync();
+        if (error is not null)
         {
-            return new(err, null);
+            return new(error, null);
         }
         return new(null, completedJob);
     }
 
-    public (IError?, Job?) TryFailJob(Guid jobId, Guid workerId)
+    public async Task<(IError?, Job?)> FailJob(Guid jobId, Guid workerId)
     {
-        IError? err;
-        (err, Job? job) = jobStore.TryGetJob(jobId);
-        if (err is not null)
+        (var error, Job? job) = await jobRepository.GetAsync(jobId);
+        if (error is not null)
         {
-            return new(err, null);
+            return new(error, null);
         }
 
-        (err, Job? failedJob) = job.TryFail(workerId);
-        if (err is not null)
+        (error, Job? failedJob) = job.TryFail(workerId);
+        if (error is not null)
         {
-            return new(err, null);
+            return new(error, null);
         }
-        err = jobStore.TryUpdateJob(failedJob!, job);
-        if (err is not null)
+        error = await jobRepository.UnitOfWork.SaveEntitiesAsync();
+        if (error is not null)
         {
-            return new(err, null);
+            return new(error, null);
         }
 
         return new(null, failedJob);

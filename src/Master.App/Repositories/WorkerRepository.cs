@@ -1,0 +1,52 @@
+﻿using System.Collections.Concurrent;
+using Master.App.EF;
+using Master.Domain.Models;
+using Master.Domain.Repositories;
+using Microsoft.EntityFrameworkCore;
+using Shared.Domain.EF;
+using Shared.Domain.Failures;
+
+namespace Master.App.Repositories;
+
+public class WorkerRepository(SchedulerDbContext context) : IWorkerRepository
+{
+    public IUnitOfWork UnitOfWork => context;
+
+    public List<Worker> Workers => context.Workers.ToList();
+    public int WorkersCount => context.Workers.Count();
+
+    public async Task<IError?> AddAsync(Worker worker)
+    {
+        _ = await context.Workers.AddAsync(worker);
+        return null;
+    }
+
+    public async Task<IError?> RemoveAsync(Worker worker)
+    {
+        _ = context.Workers.Remove(worker);
+        return await Task.FromResult<IError?>(null);
+    }
+
+    public async Task<(IError?, Worker?)> GetAsync(Guid workerId)
+    {
+        Worker? worker = await context.Workers.Where(w => w.Id == workerId).FirstOrDefaultAsync();
+        if (worker is null)
+        {
+            return new(new WorkerRepositoryNotFoundError($"There is no worker with id ({workerId}) in the list"), null);
+        }
+
+        return (null, worker);
+    }
+
+
+    public async Task<(IError?, Worker?)> FirstAsync()
+    {
+        Worker? worker = await context.Workers.FirstOrDefaultAsync();
+        if (worker is null)
+        {
+            return new(new WorkerRepositoryNotFoundError($"There is no worker in the list"), null);
+        }
+
+        return new(null, worker);
+    }
+}
