@@ -93,7 +93,7 @@ public static class JobsApi
     
     private static async Task<Results<Ok<List<Job>>, NoContent>> GetJobList(HttpContext context, IJobService jobService)
     {
-        List<Job> jobs = jobService.Jobs;
+        List<Job> jobs = await jobService.AllAsync();
         if (!jobs.Any())
         {
             return TypedResults.NoContent();

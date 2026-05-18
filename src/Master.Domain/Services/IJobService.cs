@@ -10,5 +10,5 @@ public interface IJobService
     public Task<(IError?, Job?)> StartJob(Guid jobId, Guid workerId);
     public Task<(IError?, Job?)> CompleteJob(Guid jobId, Guid workerId);
     public Task<(IError?, Job?)> FailJob(Guid jobId, Guid workerId);
-    public List<Job> Jobs { get; }
+    public Task<List<Job>> AllAsync();
 }

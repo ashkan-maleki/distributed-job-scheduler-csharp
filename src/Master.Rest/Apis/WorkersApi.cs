@@ -18,7 +18,7 @@ public static class WorkersApi
     private static async Task<Results<Ok, BadRequest<string>>> 
         ScaleWorkers(HttpContext context, IWorkerService workerService, ScaleWorkersRequest scaleWorkersRequest)
     {
-        IError? error = await workerService.Scale(scaleWorkersRequest.Count);
+        IError? error = await workerService.ScaleAsync(scaleWorkersRequest.Count);
         if (error != null)
         {
             return TypedResults.BadRequest(error.ToString());
@@ -29,7 +29,7 @@ public static class WorkersApi
     private static async Task<Results<Ok<List<Worker>>, NoContent>> 
         AllWorkers(HttpContext context, IWorkerService workerService)
     {
-        List<Worker> workers = workerService.Workers;
+        List<Worker> workers = await workerService.AllAsync();
         if (!workers.Any())
         {
             return TypedResults.NoContent();

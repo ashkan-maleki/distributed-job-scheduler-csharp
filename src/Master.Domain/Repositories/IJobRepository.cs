@@ -6,7 +6,7 @@ namespace Master.Domain.Repositories;
 
 public interface IJobRepository : IRepository
 {
-    public List<Job> Jobs { get; }
+    public Task<List<Job>> AllAsync();
 
     public Task<IError?> AddAsync(Job job);
     public Task<(IError?, Job?)> DequeueAsync();

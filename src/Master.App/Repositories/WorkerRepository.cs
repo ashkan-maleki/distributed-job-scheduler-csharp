@@ -12,9 +12,10 @@ public class WorkerRepository(SchedulerDbContext context) : IWorkerRepository
 {
     public IUnitOfWork UnitOfWork => context;
 
-    public List<Worker> Workers => context.Workers.ToList();
-    public int WorkersCount => context.Workers.Count();
-
+    public async Task<List<Worker>> AllAsync() => await context.Workers.ToListAsync();
+    
+    public async Task<int> CountAsync() => await context.Workers.CountAsync();
+    
     public async Task<IError?> AddAsync(Worker worker)
     {
         _ = await context.Workers.AddAsync(worker);

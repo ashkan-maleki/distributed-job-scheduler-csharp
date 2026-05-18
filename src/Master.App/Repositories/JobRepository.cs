@@ -21,14 +21,19 @@ public class JobRepository() : IJobRepository
         if (!_context.Jobs.Any())
         {
             Job item = new Job("Job 1: Wash dishes");
+            // item.Queue();
             Job item1 = new Job("Job 2: Clean your room");
+            // item.Queue();
             Job job1 = new Job("Job 3: Work on the garden");
+            // item.Queue();
         
             _context.Jobs.AddRange(item, item1, job1);
+            _ = UnitOfWork.SaveEntitiesAsync();
         }
     }
-    
-    public List<Job> Jobs => _context.Jobs.ToList();
+
+
+    public async Task<List<Job>> AllAsync() => await _context.Jobs.ToListAsync();
 
     public async Task<IError?> AddAsync(Job job)
     {

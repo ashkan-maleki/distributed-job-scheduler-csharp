@@ -17,6 +17,10 @@ public class SchedulerDbContext(DbContextOptions<SchedulerDbContext> options)
             .HasOne<Worker>()
             .WithMany()
             .HasForeignKey(j => j.WorkerId);
+        
+        modelBuilder.Entity<Job>()
+            .Property(j => j.Version)
+            .IsConcurrencyToken();
         base.OnModelCreating(modelBuilder);
     }
 

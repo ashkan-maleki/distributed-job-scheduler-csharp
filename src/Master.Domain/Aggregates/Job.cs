@@ -4,70 +4,85 @@ using Shared.Domain.Failures;
 namespace Master.Domain.Aggregates;
 
 
-public record Job(string Name, long Version = 1)
+public class Job()
 {
     public Guid Id { get; init; } = Guid.NewGuid();
-    public JobState State { get; init; } = JobState.Queued;
-    public Guid? WorkerId { get; init; }
+    public JobState State { get; private set; } = JobState.Queued;
+    public Guid? WorkerId { get; private set; }
     // [Timestamp]
     // public byte[] Version { get; set; }
-    public long Version { get; set; } = Version;
+    public string Name { get; private set; } 
+    public long Version { get; private  set; }
+    
+    public Job(string name) : this()
+    {
+        Name = name;
+        Version = 1;
+        State = JobState.Queued;
+    }
 
-    public (IError?, Job?) Assign(Guid workerId)
+    public IError? Assign(Guid workerId)
     {
         if (State != JobState.Queued)
         {
-            return new(new JobError("Job is in wrong state."), null);
-        }   
-        return new (null, this with { State = JobState.Assigned, WorkerId = workerId, Version =  Version + 1});
+            return new JobError("Job is in wrong state.");
+        }
+
+        State = JobState.Assigned;
+        WorkerId =  workerId;
+        Version += 1;
+        return null;
     }
 
-    public (IError?, Job?) TryStart(Guid workerId)
+    public IError? Start(Guid workerId)
     {
         if (WorkerId != workerId)
         {
-            return new(new JobError("This job is already assigned to another worker."), null);
+            return new JobError("This job is already assigned to another worker.");
         }
 
         if (State != JobState.Assigned)
         {
-            return new(new JobError("Job is in wrong state."), null);
+            return new JobError("Job is in wrong state.");
         }
 
-        Job job = this with { State = JobState.Running, Version =  Version + 1 };
-        return new(null, job);
+        State = JobState.Running;
+        Version += 1;
+        return null;
     }
     
-    public (IError?, Job?) TryComplete(Guid workerId)
+    public IError? Complete(Guid workerId)
     {
         if (WorkerId != workerId)
         {
-            return new(new JobError("This job is already assigned to another worker."), null);
+            return new JobError("This job is already assigned to another worker.");
         }
 
         if (State != JobState.Running)
         {
-            return new(new JobError("Job is in wrong state."), null);
+            return new JobError("Job is in wrong state.");
         }
 
-        Job job = this with { State = JobState.Completed, Version =  Version + 1 };
-        return new(null, job);
+        State = JobState.Completed;
+        Version += 1;
+        return null;
     }
     
-    public (IError?, Job?) TryFail(Guid workerId)
+    public IError? Fail(Guid workerId)
     {
         if (WorkerId != workerId)
         {
-            return new(new JobError("This job is already assigned to another worker."), null);
+            return new JobError("This job is already assigned to another worker.");
         }
 
         if (State != JobState.Running)
         {
-            return new(new JobError("Job is in wrong state."), null);
+            return new JobError("Job is in wrong state.");
         }
 
-        Job job = this with { State = JobState.Failed, Version =  Version + 1 };
-        return new(null, job);
+        State = JobState.Failed;
+        Version += 1;
+        return null;
     }
 }
 

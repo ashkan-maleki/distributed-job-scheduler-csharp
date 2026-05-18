@@ -6,9 +6,9 @@ namespace Master.Domain.Repositories;
 
 public interface IWorkerRepository : IRepository
 {
-    public List<Worker> Workers { get; }
-    public int WorkersCount { get; }
-
+    public Task<List<Worker>> AllAsync();
+    public Task<int> CountAsync();
+    
     public Task<IError?> AddAsync(Worker worker);
     public Task<IError?> RemoveAsync(Worker worker);
     

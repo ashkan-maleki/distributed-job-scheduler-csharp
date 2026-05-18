@@ -8,7 +8,7 @@ namespace Master.App.Services;
 
 public class JobService(IJobRepository jobRepository, IWorkerRepository workerRepository) : IJobService
 {
-    public List<Job> Jobs => jobRepository.Jobs;
+    public async Task<List<Job>> AllAsync() => await jobRepository.AllAsync();
 
     public async Task<(IError?, Job?)> QueueJob(string name)
     {
@@ -28,7 +28,7 @@ public class JobService(IJobRepository jobRepository, IWorkerRepository workerRe
 
     public async Task<(IError?, Job?)> AssignJob(Guid workerId)
     {
-        (IError? error, Job? queuedJob) = await jobRepository.DequeueAsync();
+        (IError? error, Job? job) = await jobRepository.DequeueAsync();
         if (error is not null)
         {
             return new(error, null);
@@ -39,7 +39,7 @@ public class JobService(IJobRepository jobRepository, IWorkerRepository workerRe
         {
             return new(error, null);
         }
-        (error, Job? assignedJob) = queuedJob!.Assign(workerId);
+        error = job!.Assign(workerId);
         if (error is not null)
         {
             return new(error, null);
@@ -49,7 +49,7 @@ public class JobService(IJobRepository jobRepository, IWorkerRepository workerRe
         {
             return new(error, null);
         }
-        return new(null, assignedJob);
+        return new(null, job);
     }
 
     public async Task<(IError?, Job?)> StartJob(Guid jobId, Guid workerId)
@@ -59,7 +59,7 @@ public class JobService(IJobRepository jobRepository, IWorkerRepository workerRe
         {
             return new(error, null);
         }
-        (error, Job? runningJob) = job.TryStart(workerId);
+        error = job!.Start(workerId);
         if (error is not null)
         {
             return new(error, null);
@@ -69,7 +69,7 @@ public class JobService(IJobRepository jobRepository, IWorkerRepository workerRe
         {
             return new(error, null);
         }
-        return new(null, runningJob);
+        return new(null, job);
     }
 
     public async Task<(IError?, Job?)> CompleteJob(Guid jobId, Guid workerId)
@@ -80,7 +80,7 @@ public class JobService(IJobRepository jobRepository, IWorkerRepository workerRe
             return new(error, null);
         }
 
-        (error, Job? completedJob) = job.TryComplete(workerId);
+        error = job!.Complete(workerId);
         if (error is not null)
         {
             return new(error, null);
@@ -90,7 +90,7 @@ public class JobService(IJobRepository jobRepository, IWorkerRepository workerRe
         {
             return new(error, null);
         }
-        return new(null, completedJob);
+        return new(null, job);
     }
 
     public async Task<(IError?, Job?)> FailJob(Guid jobId, Guid workerId)
@@ -101,7 +101,7 @@ public class JobService(IJobRepository jobRepository, IWorkerRepository workerRe
             return new(error, null);
         }
 
-        (error, Job? failedJob) = job.TryFail(workerId);
+        error = job!.Fail(workerId);
         if (error is not null)
         {
             return new(error, null);
@@ -112,6 +112,7 @@ public class JobService(IJobRepository jobRepository, IWorkerRepository workerRe
             return new(error, null);
         }
 
-        return new(null, failedJob);
+        return new(null, job);
     }
+
 }

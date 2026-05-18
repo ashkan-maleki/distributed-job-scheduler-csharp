@@ -5,6 +5,6 @@ namespace Master.Domain.Services;
 
 public interface IWorkerService
 {
-    public List<Worker> Workers { get; }
-    public Task<IError?> Scale(int count);
+    public Task<List<Worker>> AllAsync();
+    public Task<IError?> ScaleAsync(int count);
 }

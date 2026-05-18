@@ -8,12 +8,14 @@ namespace Master.App.Services;
 
 public class WorkerService(IWorkerRepository workerRepository) : IWorkerService
 {
-    public List<Worker> Workers => workerRepository.Workers;
-    public async Task<IError?> Scale(int count)
+    public async Task<List<Worker>> AllAsync() => await workerRepository.AllAsync();
+
+    public async Task<IError?> ScaleAsync(int count)
     {
         IError? error = null;
         Faker faker = new();
-        for (int i = 0; i < count - workerRepository.WorkersCount; i++)
+        int workerCount = await workerRepository.CountAsync();
+        for (int i = 0; i < count - workerCount; i++)
         {
             error =  await workerRepository.AddAsync(new Worker(faker.Company.CompanyName()));
             if (error != null)
@@ -21,7 +23,7 @@ public class WorkerService(IWorkerRepository workerRepository) : IWorkerService
                 return error;
             }
         }
-        while (workerRepository.WorkersCount > count)
+        while (workerCount > count)
         {
             (error, Worker? worker) = await workerRepository.FirstAsync();
             if (error != null)
