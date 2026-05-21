@@ -13,6 +13,8 @@ public interface IWorkerRepository : IRepository
     public Task<IError?> RemoveAsync(Worker worker);
     
     public Task<(IError?, Worker?)> GetAsync(Guid workerId);
+    public Task<(IError?, Worker?)> GetByNameAsync(string name);
+    public Task<(IError?, Worker?)> GetDeadWorkerByNameAsync(string name);
     public Task<(IError?, Worker?)> FirstAsync();
 }
 

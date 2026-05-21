@@ -21,11 +21,19 @@ public class WorkerService(HttpClient client)
         }
     }
     
-    public async Task Scale()
+    public async Task Register()
     {
-        ScaleWorkersRequest request = new(3);
-        HttpResponseMessage response = await client.PostAsJsonAsync("/api/worker/scale", request);
-        response.EnsureSuccessStatusCode();
-        Console.WriteLine("Workers scaled successfully");
+        HttpResponseMessage httpResponseMessage = await client.GetAsync("/api/worker/register");
+        if (httpResponseMessage.StatusCode == System.Net.HttpStatusCode.NoContent)
+        {
+            Console.WriteLine("No workers found");    
+            return;
+        }
+        
+        List<Worker>? workers = await httpResponseMessage.Content.ReadFromJsonAsync<List<Worker>>();
+        foreach (Worker worker in workers)
+        {
+            Console.WriteLine(worker);
+        }
     }
 }

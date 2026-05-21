@@ -66,3 +66,23 @@ while (start)
 
 
 public record JobResultRequest(Guid JobId, Guid WorkerId, bool Result, string? ErrorMessage);
+
+
+// using System.Diagnostics;
+//
+// Process process = new();
+//
+// process.StartInfo.FileName = "dotnet";
+//
+// process.StartInfo.Arguments =
+//     "run --project ../Worker/Worker.csproj";
+//
+// process.Start();
+//
+//
+// process.StartInfo.FileName =
+//     "Worker.exe";
+//
+// or Linux:
+//
+//     ./worker

@@ -11,6 +11,7 @@ public class SchedulerDbContext(DbContextOptions<SchedulerDbContext> options)
 {
     public DbSet<Job> Jobs { get; set; }
     public DbSet<Worker> Workers { get; set; }
+    
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Job>()
@@ -21,12 +22,33 @@ public class SchedulerDbContext(DbContextOptions<SchedulerDbContext> options)
         modelBuilder.Entity<Job>()
             .Property(j => j.Version)
             .IsConcurrencyToken();
+        
+        modelBuilder.Entity<Worker>()
+            .Property(w => w.Name)
+            .IsRequired()
+            .HasMaxLength(200);
+
+        modelBuilder.Entity<Worker>()
+            .HasIndex(w => w.Name)
+            .IsUnique();
         base.OnModelCreating(modelBuilder);
     }
 
     public async Task<IError?> SaveEntitiesAsync(CancellationToken cancellationToken = default)
     {
-        _ = await SaveChangesAsync(cancellationToken);
+        try
+        {
+            _ = await SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException e)
+        {
+            return new DbUpdateConcurrencyError(e.Message);
+        }
+        catch (DbUpdateException e)
+        {
+            return new DbUpdateError(e.Message);
+        }
+        
         return null;
     }
 }

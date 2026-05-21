@@ -40,6 +40,7 @@ public class MainService(HttpClient client)
         string? input = Console.ReadLine();
         JobService jobService = new (client);
         WorkerService workerService = new (client);
+        SchedulerStateService schedulerStateService = new (client);
         if (input == "q")
         {
             return false;
@@ -56,9 +57,13 @@ public class MainService(HttpClient client)
         {
             await workerService.All();
         }
-        if (input == "worker scale")
+        if (input == "state scale")
         {
-            await workerService.Scale();
+            await schedulerStateService.Scale();
+        }
+        if (input == "state count")
+        {
+            await schedulerStateService.WorkersCount();
         }
         return true;
     }

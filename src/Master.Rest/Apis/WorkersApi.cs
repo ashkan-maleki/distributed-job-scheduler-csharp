@@ -11,8 +11,23 @@ public static class WorkersApi
     {
         app.MapGet("/worker", AllWorkers);
         app.MapPost("/worker/scale", ScaleWorkers);
-
+        app.MapPost("/worker/register", RegisterAsync);
         return app;
+    }
+
+    private static async Task<Results<Ok<Worker>, BadRequest<string>, NotFound<string>>> 
+        RegisterAsync(HttpContext context, IWorkerService workerService, RegisterWorkerRequest registerWorkerRequest)
+    {
+        (IError? error, Worker? worker) = await workerService.RegisterAsync(registerWorkerRequest.Name);
+        if (error != null && error.Is<WorkerServiceInternalError>())
+        {
+            return TypedResults.BadRequest(error.ToString());
+        }
+        if (error != null && error.Is<WaitingSignalForWorkersError>())
+        {
+            return TypedResults.NotFound(error.ToString());
+        }
+        return TypedResults.Ok(worker);
     }
 
     private static async Task<Results<Ok, BadRequest<string>>> 
@@ -37,5 +52,7 @@ public static class WorkersApi
         return TypedResults.Ok(workers);
     }
 }
+
+public record RegisterWorkerRequest(string Name);
 
 public record ScaleWorkersRequest(int Count);

@@ -39,6 +39,29 @@ public class WorkerRepository(SchedulerDbContext context) : IWorkerRepository
         return (null, worker);
     }
 
+    public async Task<(IError?, Worker?)> GetByNameAsync(string name)
+    {
+        Worker? worker = await context.Workers.Where(w => w.Name == name).FirstOrDefaultAsync();
+        if (worker is null)
+        {
+            return new(new WorkerRepositoryNotFoundError($"There is no worker with name ({name}) in the list"), null);
+        }
+
+        return (null, worker);
+    }
+    
+    public async Task<(IError?, Worker?)> GetDeadWorkerByNameAsync(string name)
+    {
+        Worker? worker = await context.Workers.Where(w => w.CurrentState == WorkerState.Dead && w.Name == name)
+            .FirstOrDefaultAsync();
+        if (worker is null)
+        {
+            return new(new WorkerRepositoryNotFoundError($"There is no worker with name ({name}) in the list"), null);
+        }
+
+        return (null, worker);
+    }
+
 
     public async Task<(IError?, Worker?)> FirstAsync()
     {

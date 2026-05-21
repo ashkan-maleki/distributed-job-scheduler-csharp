@@ -1,9 +1,11 @@
 using Master.App.EF;
 using Master.App.Repositories;
 using Master.App.Services;
+using Master.Domain.Models;
 using Master.Domain.Repositories;
 using Master.Domain.Services;
 using Master.Rest.Apis;
+using Master.Rest.BackgroundServices;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -15,11 +17,14 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddHealthChecks();
 
+SchedulerState state = new();
+builder.Services.AddSingleton(state);
 builder.Services.AddDbContext<SchedulerDbContext>(options => { options.UseSqlite("Data Source=scheduler.db"); });
 builder.Services.AddScoped<IWorkerRepository, WorkerRepository>();
 builder.Services.AddScoped<IJobRepository, JobRepository>();
 builder.Services.AddScoped<IWorkerService, WorkerService>();
 builder.Services.AddScoped<IJobService, JobService>();
+builder.Services.AddHostedService<WorkersCountBackgroundService>();
 
 
 var app = builder.Build();
@@ -34,7 +39,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-app.MapGroup("/api").MapJobsApi().MapWorkersApi().MapHealthChecks("/hc");
+app.MapGroup("/api").MapJobsApi().MapWorkersApi().MapSchedulerStatesApi().MapHealthChecks("/hc");
 
 app.Run();
 

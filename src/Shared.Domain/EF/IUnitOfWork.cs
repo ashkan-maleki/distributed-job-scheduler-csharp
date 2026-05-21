@@ -8,4 +8,5 @@ public interface IUnitOfWork : IDisposable
     Task<IError?> SaveEntitiesAsync(CancellationToken cancellationToken = default);
 }
 
-public class SaveOperationError(string message) : Error<IUnitOfWork>(message);
+public class DbUpdateConcurrencyError(string message) : Error<IUnitOfWork>(message);
+public class DbUpdateError(string message) : Error<IUnitOfWork>(message);
