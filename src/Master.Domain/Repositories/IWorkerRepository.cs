@@ -1,6 +1,6 @@
 ﻿using Master.Domain.Models;
 using Shared.Domain.Data;
-using Shared.Domain.Failures;
+using Shared.Domain.Messages;
 
 namespace Master.Domain.Repositories;
 

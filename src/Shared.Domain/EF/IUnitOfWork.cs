@@ -1,4 +1,4 @@
-﻿using Shared.Domain.Failures;
+﻿using Shared.Domain.Messages;
 
 namespace Shared.Domain.EF;
 

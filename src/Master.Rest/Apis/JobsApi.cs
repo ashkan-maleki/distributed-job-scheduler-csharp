@@ -2,7 +2,7 @@
 using Master.Domain.Repositories;
 using Master.Domain.Services;
 using Microsoft.AspNetCore.Http.HttpResults;
-using Shared.Domain.Failures;
+using Shared.Domain.Messages;
 
 namespace Master.Rest.Apis;
 

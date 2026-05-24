@@ -1,4 +1,5 @@
 ﻿using Master.Domain.Models;
+using Master.Domain.Repositories;
 using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace Master.Rest.Apis;
@@ -12,13 +13,19 @@ public static class SchedulerStatesApi
         return app;
     }
 
-    private static async Task<Ok<SchedulerState>> WorkersCountAsync(HttpContext context, SchedulerState schedulerState) => TypedResults.Ok(schedulerState);
+    public record SchedulerStateResponse(int CurrentNumberOfWorkers, int DesiredNumberOfWorkers);
 
-    public static async Task<Ok> ScaleAsync(HttpContext context, SchedulerState schedulerState, ScaleWorkersRequest scaleWorkersRequest)
+    private static async Task<Ok<SchedulerStateResponse>> WorkersCountAsync(HttpContext context,
+        SchedulerState schedulerState, IWorkerRepository workerRepository)
+        => TypedResults.Ok(new SchedulerStateResponse(await workerRepository.CountAsync(),
+            schedulerState.DesiredNumberOfWorkers));
+
+    public static async Task<Ok> ScaleAsync(HttpContext context, SchedulerState schedulerState,
+        ScaleWorkersRequest scaleWorkersRequest)
     {
         schedulerState.DesiredNumberOfWorkers = scaleWorkersRequest.Count;
         return TypedResults.Ok();
     }
-    
+
     public record ScaleWorkersRequest(int Count);
 }

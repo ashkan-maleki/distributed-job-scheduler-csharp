@@ -1,4 +1,4 @@
-namespace Shared.Domain.Failures;
+namespace Shared.Domain.Messages;
 
 public interface IError
 {

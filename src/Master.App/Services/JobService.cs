@@ -2,7 +2,7 @@
 using Master.Domain.Models;
 using Master.Domain.Repositories;
 using Master.Domain.Services;
-using Shared.Domain.Failures;
+using Shared.Domain.Messages;
 
 namespace Master.App.Services;
 

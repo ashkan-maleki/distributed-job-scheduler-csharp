@@ -1,5 +1,5 @@
 using Shared.Domain.Data;
-using Shared.Domain.Failures;
+using Shared.Domain.Messages;
 using Job = Master.Domain.Aggregates.Job;
 
 namespace Master.Domain.Repositories;

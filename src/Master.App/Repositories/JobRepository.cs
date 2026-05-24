@@ -3,7 +3,7 @@ using Master.Domain.Aggregates;
 using Master.Domain.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Shared.Domain.EF;
-using Shared.Domain.Failures;
+using Shared.Domain.Messages;
 
 namespace Master.App.Repositories;
 

@@ -20,20 +20,4 @@ public class WorkerService(HttpClient client)
             Console.WriteLine(worker);
         }
     }
-    
-    public async Task Register()
-    {
-        HttpResponseMessage httpResponseMessage = await client.GetAsync("/api/worker/register");
-        if (httpResponseMessage.StatusCode == System.Net.HttpStatusCode.NoContent)
-        {
-            Console.WriteLine("No workers found");    
-            return;
-        }
-        
-        List<Worker>? workers = await httpResponseMessage.Content.ReadFromJsonAsync<List<Worker>>();
-        foreach (Worker worker in workers)
-        {
-            Console.WriteLine(worker);
-        }
-    }
 }

@@ -2,7 +2,7 @@
 using Master.Domain.Models;
 using Master.Domain.Repositories;
 using Master.Domain.Services;
-using Shared.Domain.Failures;
+using Shared.Domain.Messages;
 
 namespace Master.App.Services;
 
@@ -46,13 +46,13 @@ public class WorkerService(IWorkerRepository workerRepository, SchedulerState sc
 
     public async Task<(IError?, Worker?)> RegisterAsync(string name)
     {
-        // int count = await workerRepository.CountAsync();
+        int count = await workerRepository.CountAsync();
         // if (schedulerState.DesiredNumberOfWorkers >= schedulerState.CurrentNumberOfWorkers)
         // {
         //     return new(new WorkerServiceInternalError("Current number of workers is " + count), null);
         // }
 
-        if (schedulerState.CurrentNumberOfWorkers >= schedulerState.DesiredNumberOfWorkers)
+        if (count >= schedulerState.DesiredNumberOfWorkers)
         {
             return new(new WaitingSignalForWorkersError("We cannot register new workers now; wait."), null);
         }
@@ -63,7 +63,7 @@ public class WorkerService(IWorkerRepository workerRepository, SchedulerState sc
             worker = new (name);
             _ = workerRepository.AddAsync(worker);
         }
-        schedulerState.CurrentNumberOfWorkers++;
+        
         worker!.Register();
         
         return new(await workerRepository.UnitOfWork.SaveEntitiesAsync(), worker);

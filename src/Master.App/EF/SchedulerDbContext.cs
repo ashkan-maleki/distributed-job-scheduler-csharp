@@ -2,7 +2,7 @@
 using Master.Domain.Models;
 using Microsoft.EntityFrameworkCore;
 using Shared.Domain.EF;
-using Shared.Domain.Failures;
+using Shared.Domain.Messages;
 
 namespace Master.App.EF;
 

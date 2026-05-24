@@ -1,5 +1,5 @@
 ﻿using Master.Domain.Aggregates;
-using Shared.Domain.Failures;
+using Shared.Domain.Messages;
 
 namespace Master.Domain.Services;
 
