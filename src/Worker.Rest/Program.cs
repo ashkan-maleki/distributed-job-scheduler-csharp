@@ -1,6 +1,9 @@
 using System.Collections.Concurrent;
+using Microsoft.EntityFrameworkCore;
 using Worker.Rest.BackgroundServices;
 using Worker.Rest.Config;
+using Worker.Rest.Contexts;
+using Worker.Rest.EF;
 using Worker.Rest.HttpServices;
 using Worker.Rest.HttpServices.Master;
 
@@ -8,17 +11,22 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-ConcurrentDictionary<int, Worker.Rest.Domain.Worker> workers = new(); 
-AppConfig appConfig = new();
+ConcurrentDictionary<int, Worker.Rest.Domain.Worker> workers = new();
+WorkerContext context = new();
 
-
-builder.Services.AddMasterHttpClients(appConfig);
-builder.Services.AddSingleton(appConfig);
+builder.Services.ConfigureOptions<ApiConfigSetup>();
+// builder.Services.AddDbContext<WorkerDbContext>(options => {options.UseSqlite("Data Source=scheduler.db");});
+builder.Services.AddDbContextFactory<WorkerDbContext>(options => { options.UseSqlite("Data Source=scheduler.db"); });
+builder.Services.AddMasterHttpClients();
+builder.Services.AddSingleton(context);
 
 builder.Services.AddOpenApi();
 
 builder.Services.AddHostedService<MasterHealthCheckBackgroundService>()
-    .AddHostedService<RegistrationBackgroundService>();
+    .AddHostedService<RegistrationBackgroundService>()
+    .AddHostedService<HeartBeatBackgroundService>()
+    .AddHostedService<JobBackgroundService>()
+    ;
 // builder.Services.AddHostedService<SimpleWorker>();
 // builder.Services.AddHostedService<ParallelWorker>();
 
@@ -34,10 +42,7 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 
-
 app.Run();
-
-
 
 
 // for (int i = 0; i < 5; i++)

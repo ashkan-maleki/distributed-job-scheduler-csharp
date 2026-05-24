@@ -1,22 +1,26 @@
-﻿using Worker.Rest.HttpServices.Master;
+﻿using Worker.Rest.Contexts;
+using Worker.Rest.HttpServices.Master;
 
 namespace Worker.Rest.BackgroundServices;
 
-public class MasterHealthCheckBackgroundService(IMasterHealthCheckHttpClient httpClient) : BackgroundService
+public class MasterHealthCheckBackgroundService(ILogger<MasterHealthCheckBackgroundService> logger,
+    IMasterHealthCheckHttpClient httpClient, WorkerContext context) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         while (!stoppingToken.IsCancellationRequested)
         {
-            bool available =
-                await httpClient.MasterAvailableAsync(stoppingToken);
-
-            if (!available)
+            bool available = await httpClient.MasterAvailableAsync(stoppingToken);
+            if (available)
             {
-                Console.WriteLine("Master unavailable");
+                context.MasterHeartbeatTime =  DateTime.Now;
+                await Task.Delay(TimeSpan.FromSeconds(10), stoppingToken);
             }
-
-            await Task.Delay(10000, stoppingToken);
+            else
+            {
+                logger.LogError("Master unavailable");
+                await Task.Delay(TimeSpan.FromSeconds(1), stoppingToken);
+            }
         }
     }
 }

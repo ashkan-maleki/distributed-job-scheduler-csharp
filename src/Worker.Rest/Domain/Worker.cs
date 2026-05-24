@@ -6,5 +6,30 @@ public class Worker
     public string Name { get; init; } = "";
     public CancellationTokenSource CancellationTokenSource { get; init; }
     public Task Task { get; init; } = Task.CompletedTask;
-    public DateTime StartedAt { get; init; }
+    public DateTime RegisteredAt { get; private set; }
+    public DateTime HeartBeatReportedAt { get; private set; }
+    public DateTime JobCompletedAt { get; private set; }
+    public Guid? JobId { get; set; }
+
+    public void Register()
+    {
+        RegisteredAt = DateTime.UtcNow;
+    }
+
+    public void ReportHeartBeat()
+    {
+        HeartBeatReportedAt = DateTime.UtcNow;
+    }
+
+    public void CompleteJob()
+    {
+        JobCompletedAt = DateTime.UtcNow;
+    }
+
+    public void AssignJob(Guid jobId)
+    {
+        JobId = jobId;
+    }
+
+    public bool ShouldReportHeartBeat => HeartBeatReportedAt - DateTime.UtcNow > TimeSpan.FromSeconds(4);
 }
