@@ -10,16 +10,16 @@ public class MasterHealthCheckBackgroundService(ILogger<MasterHealthCheckBackgro
     {
         while (!stoppingToken.IsCancellationRequested)
         {
+            await Task.Delay(TimeSpan.FromSeconds(1), stoppingToken);
             bool available = await httpClient.MasterAvailableAsync(stoppingToken);
             if (available)
             {
                 context.MasterHeartbeatTime =  DateTime.Now;
-                await Task.Delay(TimeSpan.FromSeconds(10), stoppingToken);
+                await Task.Delay(TimeSpan.FromSeconds(9), stoppingToken);
             }
             else
             {
                 logger.LogError("Master unavailable");
-                await Task.Delay(TimeSpan.FromSeconds(1), stoppingToken);
             }
         }
     }
