@@ -37,4 +37,6 @@ public class MasterWorkerApis
 public class MasterJobApis
 {
     public string Get { get; set; } = "/api/job?workerId=";
+    public required string Start { get; set; } 
+    public required string Result { get; set; } 
 }

@@ -1,5 +1,6 @@
 ﻿using Bogus;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Worker.Rest.Contexts;
 using Worker.Rest.EF;
 using Worker.Rest.HttpServices.Master;
@@ -14,6 +15,7 @@ public class RegistrationBackgroundService(
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        Faker faker = new Faker();
         while (!stoppingToken.IsCancellationRequested)
         {
             if (context.MasterUnavailable)
@@ -21,8 +23,7 @@ public class RegistrationBackgroundService(
                 await Task.Delay(TimeSpan.FromSeconds(1), stoppingToken);
                 continue;
             }
-
-            Faker faker = new Faker();
+            
             string name = faker.Company.CompanyName();
             name = name.ToLower().Replace(" ", "-");
             (bool registered, Domain.Worker? worker) = await httpClient.Register(name);
