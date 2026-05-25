@@ -19,24 +19,24 @@ public class ApiConfig
 
 public class MasterApisConfig
 {
-    public string BaseAddress { get; set; } = "http://localhost:5031";
+    public required string BaseAddress { get; set; } 
 
-    public string HealthCheck { get; set; } = "/api/hc";
+    public required string HealthCheck { get; set; }
     public required MasterWorkerApis WorkerApis { get; set; }
     public required MasterJobApis JobApis { get; set; }
 }
 
 public class MasterWorkerApis
 {
-    public string All { get; set; } = "/api/worker";
-    public string Registration { get; set; } = "/api/worker/register";
+    public required string All { get; set; }
+    public required string Registration { get; set; }
 
-    public string HeartBeat { get; set; } = "/api/worker/heartbeat?workerId=";
+    public required string HeartBeat { get; set; }
 }
 
 public class MasterJobApis
 {
-    public string Get { get; set; } = "/api/job?workerId=";
+    public required string Get { get; set; }
     public required string Start { get; set; } 
     public required string Result { get; set; } 
 }
