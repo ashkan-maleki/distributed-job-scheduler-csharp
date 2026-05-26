@@ -2,7 +2,7 @@
 using Master.Domain.Models;
 using Master.Domain.Repositories;
 using Master.Domain.Services;
-using Shared.Domain.Messages;
+using Shared.Domain.DTOs;
 
 namespace Master.App.Services;
 
@@ -10,9 +10,9 @@ public class WorkerService(IWorkerRepository workerRepository, SchedulerState sc
 {
     public async Task<List<Worker>> AllAsync() => await workerRepository.AllAsync();
 
-    public async Task<IError?> ScaleAsync(int count)
+    public async Task<IMessage?> ScaleAsync(int count)
     {
-        IError? error = null;
+        IMessage? error = null;
         Faker faker = new();
         int workerCount = await workerRepository.CountAsync();
         for (int i = 0; i < count - workerCount; i++)
@@ -44,7 +44,7 @@ public class WorkerService(IWorkerRepository workerRepository, SchedulerState sc
         return null;
     }
 
-    public async Task<(IError?, Worker?)> RegisterAsync(string name)
+    public async Task<(IMessage?, Worker?)> RegisterAsync(string name)
     {
         int count = await workerRepository.CountAsync();
         // if (schedulerState.DesiredNumberOfWorkers >= schedulerState.CurrentNumberOfWorkers)
@@ -57,7 +57,7 @@ public class WorkerService(IWorkerRepository workerRepository, SchedulerState sc
             return new(new WaitingSignalForWorkersError("We cannot register new workers now; wait."), null);
         }
         
-        (IError? error, Worker? worker) = await workerRepository.GetByNameAsync(name);
+        (IMessage? error, Worker? worker) = await workerRepository.GetByNameAsync(name);
         if (error != null)
         {
             worker = new (name);
@@ -69,14 +69,14 @@ public class WorkerService(IWorkerRepository workerRepository, SchedulerState sc
         return new(await workerRepository.UnitOfWork.SaveEntitiesAsync(), worker);
     }
 
-    public Task<IError?> UnregisterAsync(Worker worker)
+    public Task<IMessage?> UnregisterAsync(Worker worker)
     {
         throw new NotImplementedException();
     }
 
-    public async Task<IError?> ReportHeartBeatAsync(Guid workerId)
+    public async Task<IMessage?> ReportHeartBeatAsync(Guid workerId)
     {
-        (IError? error, Worker? worker) = await workerRepository.GetAsync(workerId);
+        (IMessage? error, Worker? worker) = await workerRepository.GetAsync(workerId);
         if (error != null)
         {
             return error;

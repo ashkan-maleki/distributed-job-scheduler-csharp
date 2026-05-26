@@ -1,7 +1,7 @@
 ﻿using Bogus;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Internal;
-using Shared.Domain.Messages;
+using Shared.Domain.DTOs;
 using Shared.Domain.Models;
 using Worker.Rest.Contexts;
 using Worker.Rest.EF;
@@ -34,6 +34,8 @@ public class JobBackgroundService(
                 .Where(w => w.JobId == null)
                 .OrderBy(w => w.JobCompletedAt)
                 .FirstOrDefaultAsync(cancellationToken: stoppingToken);
+            
+            
 
             if (worker == null)
             {
@@ -42,7 +44,7 @@ public class JobBackgroundService(
                 continue;
             }
 
-            (IError? error, Job? job) = await jobHttpClient.GetJobAsync(worker.Id, stoppingToken);
+            (IMessage? error, Job? job) = await jobHttpClient.GetJobAsync(worker.Id, stoppingToken);
             if (error != null)
             {
                 logger.LogError(error.ToString());

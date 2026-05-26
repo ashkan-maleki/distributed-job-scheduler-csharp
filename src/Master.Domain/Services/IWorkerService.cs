@@ -1,17 +1,17 @@
 ﻿using Master.Domain.Models;
-using Shared.Domain.Messages;
+using Shared.Domain.DTOs;
 
 namespace Master.Domain.Services;
 
 public interface IWorkerService
 {
     public Task<List<Worker>> AllAsync();
-    public Task<IError?> ScaleAsync(int count);
+    public Task<IMessage?> ScaleAsync(int count);
     
-    public Task<(IError?, Worker?)> RegisterAsync(string name);
-    public Task<IError?> UnregisterAsync(Worker worker);
-    public Task<IError?> ReportHeartBeatAsync(Guid workerId);
+    public Task<(IMessage?, Worker?)> RegisterAsync(string name);
+    public Task<IMessage?> UnregisterAsync(Worker worker);
+    public Task<IMessage?> ReportHeartBeatAsync(Guid workerId);
 }
 
-public class WorkerServiceInternalError(string message) : Error<IWorkerService>(message);
-public class WaitingSignalForWorkersError(string message) : Error<IWorkerService>(message);
+public class WorkerServiceInternalError(string content) : Error<IWorkerService>(content);
+public class WaitingSignalForWorkersError(string content) : Error<IWorkerService>(content);

@@ -1,6 +1,6 @@
 ﻿using System.Net;
 using Microsoft.Extensions.Options;
-using Shared.Domain.Messages;
+using Shared.Domain.DTOs;
 using Shared.Domain.Models;
 using Worker.Rest.Config;
 
@@ -8,21 +8,21 @@ namespace Worker.Rest.HttpServices.Master;
 
 public interface IJobHttpClient
 {
-    public Task<(IError?, Job?)> GetJobAsync(Guid workerId, CancellationToken stoppingToken);
-    public Task<(IError?, Job?)> StartJobAsync(Guid workerId, Guid jobId, CancellationToken stoppingToken);
-    public Task<(IError?, Job?)> ResultJobAsync(JobResultRequest request, CancellationToken stoppingToken);
+    public Task<(IMessage?, Job?)> GetJobAsync(Guid workerId, CancellationToken stoppingToken);
+    public Task<(IMessage?, Job?)> StartJobAsync(Guid workerId, Guid jobId, CancellationToken stoppingToken);
+    public Task<(IMessage?, Job?)> ResultJobAsync(JobResultRequest request, CancellationToken stoppingToken);
 }
 
 public record JobResultRequest(Guid JobId, Guid WorkerId, bool Successful, string? ErrorMessage);
 
-public class PollingFailureError(string message) : Error<IJobHttpClient>(message);
-public class StartingJobError(string message) : Error<IJobHttpClient>(message);
-public class CompletingJobError(string message) : Error<IJobHttpClient>(message);
+public class PollingFailureError(string content) : Error<IJobHttpClient>(content);
+public class StartingJobError(string content) : Error<IJobHttpClient>(content);
+public class CompletingJobError(string content) : Error<IJobHttpClient>(content);
 
 public class JobHttpClient(HttpClient client, IOptions<ApiConfig> options) : IJobHttpClient
 {
     private MasterJobApis JobApis => options.Value.MasterApis.JobApis;
-    public async Task<(IError?, Job?)> GetJobAsync(Guid workerId, CancellationToken stoppingToken)
+    public async Task<(IMessage?, Job?)> GetJobAsync(Guid workerId, CancellationToken stoppingToken)
     {
         string requestUrl = $"{JobApis.Get}{workerId}";
         HttpResponseMessage response = await client.GetAsync(requestUrl, stoppingToken);
@@ -38,7 +38,7 @@ public class JobHttpClient(HttpClient client, IOptions<ApiConfig> options) : IJo
         return (null, job);
     }
 
-    public async Task<(IError?, Job?)> StartJobAsync(Guid workerId, Guid jobId, CancellationToken stoppingToken)
+    public async Task<(IMessage?, Job?)> StartJobAsync(Guid workerId, Guid jobId, CancellationToken stoppingToken)
     {
         string requestUrl = $"{JobApis.Start}{workerId}&jobId={jobId}";
         HttpResponseMessage response = await client.PostAsync(requestUrl, null, stoppingToken);
@@ -54,7 +54,7 @@ public class JobHttpClient(HttpClient client, IOptions<ApiConfig> options) : IJo
         return (null, job);
     }
 
-    public async Task<(IError?, Job?)> ResultJobAsync(JobResultRequest request, CancellationToken stoppingToken)
+    public async Task<(IMessage?, Job?)> ResultJobAsync(JobResultRequest request, CancellationToken stoppingToken)
     {
         string requestUrl = $"{JobApis.Result}";
         HttpResponseMessage response = await client.PostAsJsonAsync(requestUrl, request, stoppingToken);

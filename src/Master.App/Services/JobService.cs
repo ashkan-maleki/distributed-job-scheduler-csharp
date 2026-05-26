@@ -2,7 +2,7 @@
 using Master.Domain.Models;
 using Master.Domain.Repositories;
 using Master.Domain.Services;
-using Shared.Domain.Messages;
+using Shared.Domain.DTOs;
 
 namespace Master.App.Services;
 
@@ -10,10 +10,10 @@ public class JobService(IJobRepository jobRepository, IWorkerRepository workerRe
 {
     public async Task<List<Job>> AllAsync() => await jobRepository.AllAsync();
 
-    public async Task<(IError?, Job?)> QueueJob(string name)
+    public async Task<(IMessage?, Job?)> QueueJob(string name)
     {
         Job job = new Job(name);
-        IError? error = await jobRepository.AddAsync(job);
+        IMessage? error = await jobRepository.AddAsync(job);
         if (error is not null)
         {
             return new(error, null);
@@ -26,9 +26,9 @@ public class JobService(IJobRepository jobRepository, IWorkerRepository workerRe
         return new(null, job);
     }
 
-    public async Task<(IError?, Job?)> AssignJob(Guid workerId)
+    public async Task<(IMessage?, Job?)> AssignJob(Guid workerId)
     {
-        (IError? error, Job? job) = await jobRepository.DequeueAsync();
+        (IMessage? error, Job? job) = await jobRepository.DequeueAsync();
         if (error is not null)
         {
             return new(error, null);
@@ -52,9 +52,9 @@ public class JobService(IJobRepository jobRepository, IWorkerRepository workerRe
         return new(null, job);
     }
 
-    public async Task<(IError?, Job?)> StartJob(Guid jobId, Guid workerId)
+    public async Task<(IMessage?, Job?)> StartJob(Guid jobId, Guid workerId)
     {
-        (IError? error, Job? job) = await jobRepository.GetAsync(jobId);
+        (IMessage? error, Job? job) = await jobRepository.GetAsync(jobId);
         if (error is not null)
         {
             return new(error, null);
@@ -72,9 +72,9 @@ public class JobService(IJobRepository jobRepository, IWorkerRepository workerRe
         return new(null, job);
     }
 
-    public async Task<(IError?, Job?)> CompleteJob(Guid jobId, Guid workerId)
+    public async Task<(IMessage?, Job?)> CompleteJob(Guid jobId, Guid workerId)
     {
-        (IError? error, Job? job) = await jobRepository.GetAsync(jobId);
+        (IMessage? error, Job? job) = await jobRepository.GetAsync(jobId);
         if (error is not null)
         {
             return new(error, null);
@@ -93,7 +93,7 @@ public class JobService(IJobRepository jobRepository, IWorkerRepository workerRe
         return new(null, job);
     }
 
-    public async Task<(IError?, Job?)> FailJob(Guid jobId, Guid workerId)
+    public async Task<(IMessage?, Job?)> FailJob(Guid jobId, Guid workerId)
     {
         (var error, Job? job) = await jobRepository.GetAsync(jobId);
         if (error is not null)

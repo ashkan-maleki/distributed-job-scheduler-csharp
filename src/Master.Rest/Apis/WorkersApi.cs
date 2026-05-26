@@ -1,7 +1,7 @@
 ﻿using Master.Domain.Models;
 using Master.Domain.Services;
 using Microsoft.AspNetCore.Http.HttpResults;
-using Shared.Domain.Messages;
+using Shared.Domain.DTOs;
 
 namespace Master.Rest.Apis;
 
@@ -19,7 +19,7 @@ public static class WorkersApi
     private static async Task<Results<Ok, BadRequest<string>>> 
         ScaleWorkers(HttpContext context, IWorkerService workerService, ScaleWorkersRequest scaleWorkersRequest)
     {
-        IError? error = await workerService.ScaleAsync(scaleWorkersRequest.Count);
+        IMessage? error = await workerService.ScaleAsync(scaleWorkersRequest.Count);
         if (error != null)
         {
             return TypedResults.BadRequest(error.ToString());
@@ -41,7 +41,7 @@ public static class WorkersApi
     private static async Task<Results<Ok<Worker>, BadRequest<string>, NotFound<string>>> 
         RegisterAsync(HttpContext context, IWorkerService workerService, RegisterWorkerRequest registerWorkerRequest)
     {
-        (IError? error, Worker? worker) = await workerService.RegisterAsync(registerWorkerRequest.Name);
+        (IMessage? error, Worker? worker) = await workerService.RegisterAsync(registerWorkerRequest.Name);
         if (error != null && error.Is<WorkerServiceInternalError>())
         {
             return TypedResults.BadRequest(error.ToString());
@@ -56,10 +56,10 @@ public static class WorkersApi
     private static async Task<Results<Ok, BadRequest<string>>> 
         HeartBeatAsync(HttpContext context, IWorkerService workerService, Guid workerId)
     {
-        IError? error = await workerService.ReportHeartBeatAsync(workerId);
+        IMessage? error = await workerService.ReportHeartBeatAsync(workerId);
         if (error != null)
         {
-            return TypedResults.BadRequest(error.Message);
+            return TypedResults.BadRequest(error.Content);
         }
         return TypedResults.Ok();
     }

@@ -2,8 +2,8 @@
 using Master.Domain.Aggregates;
 using Master.Domain.Repositories;
 using Microsoft.EntityFrameworkCore;
+using Shared.Domain.DTOs;
 using Shared.Domain.EF;
-using Shared.Domain.Messages;
 
 namespace Master.App.Repositories;
 
@@ -35,13 +35,13 @@ public class JobRepository() : IJobRepository
 
     public async Task<List<Job>> AllAsync() => await _context.Jobs.ToListAsync();
 
-    public async Task<IError?> AddAsync(Job job)
+    public async Task<IMessage?> AddAsync(Job job)
     {
         _ = await _context.Jobs.AddAsync(job);
         return null;
     }
 
-    public async Task<(IError?, Job?)> DequeueAsync()
+    public async Task<(IMessage?, Job?)> DequeueAsync()
     {
         Job? queuedJob = await _context.Jobs.Where(j => j.State == JobState.Queued).FirstOrDefaultAsync();
         if (queuedJob == null)
@@ -57,7 +57,7 @@ public class JobRepository() : IJobRepository
     //     return null;
     // }
 
-    public async Task<(IError?, Job?)> GetAsync(Guid jobId)
+    public async Task<(IMessage?, Job?)> GetAsync(Guid jobId)
     {
         Job? job = await _context.Jobs.Where(j => j.Id == jobId).FirstOrDefaultAsync();
         if (job == null)

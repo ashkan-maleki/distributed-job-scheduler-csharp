@@ -1,14 +1,14 @@
 ﻿using Master.Domain.Aggregates;
-using Shared.Domain.Messages;
+using Shared.Domain.DTOs;
 
 namespace Master.Domain.Services;
 
 public interface IJobService
 {
-    public Task<(IError?, Job?)> QueueJob(string name);
-    public Task<(IError?, Job?)> AssignJob(Guid workerId);
-    public Task<(IError?, Job?)> StartJob(Guid jobId, Guid workerId);
-    public Task<(IError?, Job?)> CompleteJob(Guid jobId, Guid workerId);
-    public Task<(IError?, Job?)> FailJob(Guid jobId, Guid workerId);
+    public Task<(IMessage?, Job?)> QueueJob(string name);
+    public Task<(IMessage?, Job?)> AssignJob(Guid workerId);
+    public Task<(IMessage?, Job?)> StartJob(Guid jobId, Guid workerId);
+    public Task<(IMessage?, Job?)> CompleteJob(Guid jobId, Guid workerId);
+    public Task<(IMessage?, Job?)> FailJob(Guid jobId, Guid workerId);
     public Task<List<Job>> AllAsync();
 }

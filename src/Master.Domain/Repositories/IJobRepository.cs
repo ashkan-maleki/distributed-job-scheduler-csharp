@@ -1,5 +1,5 @@
 using Shared.Domain.Data;
-using Shared.Domain.Messages;
+using Shared.Domain.DTOs;
 using Job = Master.Domain.Aggregates.Job;
 
 namespace Master.Domain.Repositories;
@@ -8,11 +8,11 @@ public interface IJobRepository : IRepository
 {
     public Task<List<Job>> AllAsync();
 
-    public Task<IError?> AddAsync(Job job);
-    public Task<(IError?, Job?)> DequeueAsync();
+    public Task<IMessage?> AddAsync(Job job);
+    public Task<(IMessage?, Job?)> DequeueAsync();
     // public Task<IError?> Update(Job newJob, Job oldJob);
-    public Task<(IError?, Job?)> GetAsync(Guid jobId);
+    public Task<(IMessage?, Job?)> GetAsync(Guid jobId);
 }
 
-public class JobRepositoryOperationError(string message) : Error<IJobRepository>(message);
-public class JobRepositoryNotFoundError(string message) : Error<IJobRepository>(message);
+public class JobRepositoryOperationError(string content) : Error<IJobRepository>(content);
+public class JobRepositoryNotFoundError(string content) : Error<IJobRepository>(content);

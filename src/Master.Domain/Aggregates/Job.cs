@@ -1,5 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using Shared.Domain.Messages;
+using Shared.Domain.DTOs;
 
 namespace Master.Domain.Aggregates;
 
@@ -21,7 +21,7 @@ public class Job()
         State = JobState.Queued;
     }
 
-    public IError? Assign(Guid workerId)
+    public IMessage? Assign(Guid workerId)
     {
         if (State != JobState.Queued)
         {
@@ -34,7 +34,7 @@ public class Job()
         return null;
     }
 
-    public IError? Start(Guid workerId)
+    public IMessage? Start(Guid workerId)
     {
         if (WorkerId != workerId)
         {
@@ -51,7 +51,7 @@ public class Job()
         return null;
     }
     
-    public IError? Complete(Guid workerId)
+    public IMessage? Complete(Guid workerId)
     {
         if (WorkerId != workerId)
         {
@@ -68,7 +68,7 @@ public class Job()
         return null;
     }
     
-    public IError? Fail(Guid workerId)
+    public IMessage? Fail(Guid workerId)
     {
         if (WorkerId != workerId)
         {
@@ -86,4 +86,4 @@ public class Job()
     }
 }
 
-public class JobError(string message) : Error<Job>(message);
+public class JobError(string content) : Error<Job>(content);

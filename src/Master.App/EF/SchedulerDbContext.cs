@@ -1,8 +1,8 @@
 ﻿using Master.Domain.Aggregates;
 using Master.Domain.Models;
 using Microsoft.EntityFrameworkCore;
+using Shared.Domain.DTOs;
 using Shared.Domain.EF;
-using Shared.Domain.Messages;
 
 namespace Master.App.EF;
 
@@ -34,7 +34,7 @@ public class SchedulerDbContext(DbContextOptions<SchedulerDbContext> options)
         base.OnModelCreating(modelBuilder);
     }
 
-    public async Task<IError?> SaveEntitiesAsync(CancellationToken cancellationToken = default)
+    public async Task<Exception?> SaveEntitiesAsync(CancellationToken cancellationToken = default)
     {
         try
         {
@@ -42,11 +42,11 @@ public class SchedulerDbContext(DbContextOptions<SchedulerDbContext> options)
         }
         catch (DbUpdateConcurrencyException e)
         {
-            return new DbUpdateConcurrencyError(e.Message);
+            return e;
         }
         catch (DbUpdateException e)
         {
-            return new DbUpdateError(e.Message);
+            return e;
         }
         
         return null;
