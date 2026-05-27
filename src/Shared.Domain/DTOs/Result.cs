@@ -2,51 +2,59 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Shared.Domain.DTOs;
 
-public class Result
+public class Results
 {
-    public static Result<T> Ok<T>(string message) => new(message, type: ResultType.Message);
-    public static Result<T> Fail<T>(string message) => new(message, type: ResultType.Error);
-    public static Result<T> FromException<T>(Exception exception) => new(exception);
     public static Result<T> Ok<T>(T data) => new(data);
+    public static Result<T> Saved<T>(string message) => new(message, status: ResultStatus.Saved);
+    public static Result<T> NotFound<T>(string message) => new(message, status: ResultStatus.NotFound);
+    public static Result<T> ExceptionThrown<T>(Exception exception) => new(exception);
 }
 
-public enum ResultType
+public enum ResultStatus
 {
-    Data,
-    Error,
-    Message,
+    Ok,
+    NoContent,
+    Saved,
+    NotFound,
+    DomainError,
     Exception
 }
 
 public class Result<T>
 {
-    private ResultType Type { get; }
+    private bool Success => _status is ResultStatus.Ok 
+        or ResultStatus.NoContent
+        or ResultStatus.Saved;
+    
+    private readonly ResultStatus _status;
 
-    public T? Data { get; private set; }
-    public string? Message { get; private set; }
+    public T? Data { get; }
+    public string? Message { get; }
     
-    public Exception? Exception { get; private set; }
+    public Exception? Exception { get; }
     
     
-    private Result(string? message, Exception? exception, ResultType type)
+    private Result(string? message, Exception? exception, ResultStatus status)
     {
         Message = message;
         Exception = exception;
-        Type = type;
+        _status = status;
+        
     }
 
-    public Result(string message, ResultType type = ResultType.Error)
+    public Result(string message, ResultStatus status = ResultStatus.NotFound)
     {
         Message = message;
         Exception = null;
-        Type = type;
+        _status = status;
+        
     }
 
     public Result(Exception exception)
     {
-        Message = string.Empty;
+        Message = exception.Message;
         Exception = exception;
-        Type = ResultType.Exception;
+        _status = ResultStatus.Exception;
     }
 
     public Result(T data)
@@ -54,24 +62,24 @@ public class Result<T>
         Message = string.Empty;
         Data = data;
         Exception = null;
-        Type = ResultType.Data;
+        _status = ResultStatus.Ok;
     }
     
     [MemberNotNullWhen(true, nameof(Data))]
-    public bool HasData => (Data != null && Type == ResultType.Data);
+    public bool HasData => (Data != null && _status == ResultStatus.Ok);
     
     [MemberNotNullWhen(true, nameof(Message))]
-    public bool HasMessage => (!string.IsNullOrEmpty(Message) && Type == ResultType.Message);
+    public bool HasMessage => (!string.IsNullOrEmpty(Message) && _status == ResultStatus.DomainError);
     
     [MemberNotNullWhen(true, nameof(Message))]
-    public bool ErrorRaised => (!string.IsNullOrEmpty(Message) && Type == ResultType.Error);
+    public bool ErrorRaised => (!string.IsNullOrEmpty(Message) && _status == ResultStatus.NotFound);
 
     [MemberNotNullWhen(true, nameof(Exception))]
-    public bool ExceptionThrown => (Exception != null && Type == ResultType.Exception);
+    public bool ExceptionThrown => (Exception != null && _status == ResultStatus.Exception);
     
     
     public bool Failed => (ExceptionThrown || ErrorRaised);
     public bool Ok => !Failed;
     
-    public Result<TNew> Copy<TNew>() => new(Message, Exception, type: Type);
+    public Result<TNew> SwapPayload<TNew>() => new(Message, Exception, status: _status);
 }
