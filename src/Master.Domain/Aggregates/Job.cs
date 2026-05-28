@@ -1,5 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
-using Shared.Domain.DTOs;
+﻿using Shared.Domain.DTOs;
 
 namespace Master.Domain.Aggregates;
 
@@ -21,69 +20,68 @@ public class Job()
         State = JobState.Queued;
     }
 
-    public IMessage? Assign(Guid workerId)
+    public Result Assign(Guid workerId)
     {
         if (State != JobState.Queued)
         {
-            return new JobError("Job is in wrong state.");
+            return Results.DomainErrorRaised("Job is in wrong state.");
         }
 
         State = JobState.Assigned;
         WorkerId =  workerId;
         Version += 1;
-        return null;
+        return Results.NoContent();
     }
 
-    public IMessage? Start(Guid workerId)
+    public Result Start(Guid workerId)
     {
         if (WorkerId != workerId)
         {
-            return new JobError("This job is already assigned to another worker.");
+            return Results.DomainErrorRaised("This job is already assigned to another worker.");
         }
 
         if (State != JobState.Assigned)
         {
-            return new JobError("Job is in wrong state.");
+            return Results.DomainErrorRaised("Job is in wrong state.");
         }
 
         State = JobState.Running;
         Version += 1;
-        return null;
+        return Results.NoContent();
     }
     
-    public IMessage? Complete(Guid workerId)
+    public Result Complete(Guid workerId)
     {
         if (WorkerId != workerId)
         {
-            return new JobError("This job is already assigned to another worker.");
+            return Results.DomainErrorRaised("This job is already assigned to another worker.");
         }
 
         if (State != JobState.Running)
         {
-            return new JobError("Job is in wrong state.");
+            return Results.DomainErrorRaised("Job is in wrong state.");
         }
 
         State = JobState.Completed;
         Version += 1;
-        return null;
+        return Results.NoContent();
     }
     
-    public IMessage? Fail(Guid workerId)
+    public Result Fail(Guid workerId)
     {
         if (WorkerId != workerId)
         {
-            return new JobError("This job is already assigned to another worker.");
+            
+            return Results.DomainErrorRaised("This job is already assigned to another worker.");
         }
 
         if (State != JobState.Running)
         {
-            return new JobError("Job is in wrong state.");
+            return Results.DomainErrorRaised("Job is in wrong state.");
         }
 
         State = JobState.Failed;
         Version += 1;
-        return null;
+        return Results.NoContent();
     }
 }
-
-public class JobError(string content) : Error<Job>(content);
