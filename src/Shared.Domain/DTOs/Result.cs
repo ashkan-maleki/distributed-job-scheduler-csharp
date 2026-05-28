@@ -7,6 +7,7 @@ public class Results
     public static Result<T> Ok<T>(T data) => new(data);
     public static Result<T> Saved<T>(string message) => new(message, status: ResultStatus.Saved);
     public static Result<T> NotFound<T>(string message) => new(message, status: ResultStatus.NotFound);
+    public static Result<T> DomainErrorRaised<T>(string message) => new(message, ResultStatus.DomainError);
     public static Result<T> ExceptionThrown<T>(Exception exception) => new(exception);
 }
 
@@ -17,7 +18,7 @@ public enum ResultStatus
     Saved,
     NotFound,
     DomainError,
-    Exception
+    UnexpectedError
 }
 
 public class Result<T>
@@ -54,7 +55,7 @@ public class Result<T>
     {
         Message = exception.Message;
         Exception = exception;
-        _status = ResultStatus.Exception;
+        _status = ResultStatus.UnexpectedError;
     }
 
     public Result(T data)
@@ -66,20 +67,41 @@ public class Result<T>
     }
     
     [MemberNotNullWhen(true, nameof(Data))]
-    public bool HasData => (Data != null && _status == ResultStatus.Ok);
+    public bool Ok => (Data is not null && _status == ResultStatus.Ok);
     
-    [MemberNotNullWhen(true, nameof(Message))]
-    public bool HasMessage => (!string.IsNullOrEmpty(Message) && _status == ResultStatus.DomainError);
-    
-    [MemberNotNullWhen(true, nameof(Message))]
-    public bool ErrorRaised => (!string.IsNullOrEmpty(Message) && _status == ResultStatus.NotFound);
-
     [MemberNotNullWhen(true, nameof(Exception))]
-    public bool ExceptionThrown => (Exception != null && _status == ResultStatus.Exception);
+    public bool ExceptionThrown => (Exception is not null && _status == ResultStatus.UnexpectedError);
+
+    [MemberNotNullWhen(true, nameof(Message))]
+    public bool HasMessage => (!string.IsNullOrEmpty(Message) && Success);
+
+    [MemberNotNullWhen(true, nameof(Message))]
+    public bool ErrorRaised => (!string.IsNullOrEmpty(Message) && !Success && !ExceptionThrown);
     
+    public bool TryOk([NotNullWhen(true)] out T? data)
+    {
+        data = Data;
+        return Ok;
+    }
+
+    public bool TryException([NotNullWhen(true)] out Exception? exception)
+    {
+        exception = Exception;
+        return ExceptionThrown;
+    }
+
+    public bool TryMessage([NotNullWhen(true)] out string? message)
+    {
+        message = Message;
+        return HasMessage;
+    }
+
+    public bool TryError([NotNullWhen(true)] out string? message)
+    {
+        message = Message;
+        return ErrorRaised;
+    }
     
-    public bool Failed => (ExceptionThrown || ErrorRaised);
-    public bool Ok => !Failed;
     
     public Result<TNew> SwapPayload<TNew>() => new(Message, Exception, status: _status);
 }
