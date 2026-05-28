@@ -4,22 +4,20 @@ namespace Shared.Domain.DTOs;
 
 public static class Results
 {
-    public static Result NoContent() => new Result(ResultStatus.NoContent);
-    public static Result Ok(string message) => new(message, status: ResultStatus.Ok);
+    public static Result Ok() => new (ResultStatus.Ok);
     public static Result NotFound(string message) => new(message, status: ResultStatus.NotFound);
-    public static Result DomainErrorRaised(string message) => new(message, ResultStatus.DomainError);
+    public static Result DomainFailure(string message) => new(message, ResultStatus.DomainError);
     public static Result ExceptionThrown(Exception exception) => new(exception);
 }
 
 public static class QueryResults
 {
-    public static QueryResult<T> NoContent<T>() => Results.NoContent().ToQueryResult<T>();
+    public static QueryResult<T> Ok<T>() => Results.Ok().ToQueryResult<T>();
     public static QueryResult<T> Found<T>(T data) => new(data);
-    public static QueryResult<T> Ok<T>(string message) => Results.Ok(message).ToQueryResult<T>();
     public static QueryResult<T> NotFound<T>(string message) => Results.NotFound(message).ToQueryResult<T>();
 
-    public static QueryResult<T> DomainErrorRaised<T>(string message) =>
-        Results.DomainErrorRaised(message).ToQueryResult<T>();
+    public static QueryResult<T> DomainFailure<T>(string message) =>
+        Results.DomainFailure(message).ToQueryResult<T>();
 
     public static QueryResult<T> ExceptionThrown<T>(Exception exception) =>
         Results.ExceptionThrown(exception).ToQueryResult<T>();
@@ -29,7 +27,6 @@ public enum ResultStatus
 {
     Ok,
     Found,
-    NoContent,
     NotFound,
     DomainError,
     UnexpectedError
@@ -38,7 +35,6 @@ public enum ResultStatus
 public class Result
 {
     private bool Success => Status is ResultStatus.Found
-        or ResultStatus.NoContent
         or ResultStatus.Ok;
 
     public ResultStatus Status { get; protected set; }
