@@ -2,7 +2,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Shared.Domain.DTOs;
 
-public class Results
+public static class Results
 {
     public static Result<T> Ok<T>(T data) => new(data);
     public static Result<T> Saved<T>(string message) => new(message, status: ResultStatus.Saved);
