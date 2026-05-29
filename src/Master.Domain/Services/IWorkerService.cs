@@ -6,12 +6,9 @@ namespace Master.Domain.Services;
 public interface IWorkerService
 {
     public Task<List<Worker>> AllAsync();
-    public Task<IMessage?> ScaleAsync(int count);
+    public Task<Result> ScaleAsync(int count);
     
-    public Task<(IMessage?, Worker?)> RegisterAsync(string name);
-    public Task<IMessage?> UnregisterAsync(Worker worker);
-    public Task<IMessage?> ReportHeartBeatAsync(Guid workerId);
+    public Task<QueryResult<Worker>> RegisterAsync(string name);
+    public Task<Result> UnregisterAsync(Worker worker);
+    public Task<Result> ReportHeartBeatAsync(Guid workerId);
 }
-
-public class WorkerServiceInternalError(string content) : Error<IWorkerService>(content);
-public class WaitingSignalForWorkersError(string content) : Error<IWorkerService>(content);

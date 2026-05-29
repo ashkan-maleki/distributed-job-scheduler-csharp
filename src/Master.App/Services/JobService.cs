@@ -10,109 +10,116 @@ public class JobService(IJobRepository jobRepository, IWorkerRepository workerRe
 {
     public async Task<List<Job>> AllAsync() => await jobRepository.AllAsync();
 
-    public async Task<(IMessage?, Job?)> QueueJob(string name)
+    public async Task<QueryResult<Job>> QueueJob(string name)
     {
         Job job = new Job(name);
-        IMessage? error = await jobRepository.AddAsync(job);
-        if (error is not null)
+        Result result = await jobRepository.AddAsync(job);
+        if (!result.Ok)
         {
-            return new(error, null);
+            return result.ToQueryResult<Job>();
         }
-        error = await jobRepository.UnitOfWork.SaveEntitiesAsync();
-        if (error is not null)
+        Exception? exception = await jobRepository.UnitOfWork.SaveEntitiesAsync();
+        if (exception is not null)
         {
-            return new(error, null);
+            return QueryResults.ExceptionThrown<Job>(exception);
         }
-        return new(null, job);
+        return QueryResults.Ok<Job>();
     }
 
-    public async Task<(IMessage?, Job?)> AssignJob(Guid workerId)
+    public async Task<QueryResult<Job>> AssignJob(Guid workerId)
     {
-        (IMessage? error, Job? job) = await jobRepository.DequeueAsync();
-        if (error is not null)
+        QueryResult<Job> jobQueryResult = await jobRepository.GetQueuedJobAsync();
+        if (jobQueryResult.NotFound)
         {
-            return new(error, null);
+            return jobQueryResult.ToQueryResult<Job>();
         }
 
-        (error, Worker? worker) = await workerRepository.GetAsync(workerId);
-        if (error is not null)
+        QueryResult<Worker> workerQueryResult = await workerRepository.GetAsync(workerId);
+        if (workerQueryResult.NotFound)
         {
-            return new(error, null);
+            return  workerQueryResult.SwapPayload<Job>();
         }
-        error = job!.Assign(workerId);
-        if (error is not null)
+
+        Job job = jobQueryResult.Data;
+        Result result = job.Assign(workerId);
+        if (!result.Ok)
         {
-            return new(error, null);
+            return result.ToQueryResult<Job>();
         }
-        error = await jobRepository.UnitOfWork.SaveEntitiesAsync();
-        if (error is not null)
+        Exception? exception = await jobRepository.UnitOfWork.SaveEntitiesAsync();
+        if (exception is not null)
         {
-            return new(error, null);
+            return QueryResults.ExceptionThrown<Job>(exception);
         }
-        return new(null, job);
+        return QueryResults.Ok<Job>();
     }
 
-    public async Task<(IMessage?, Job?)> StartJob(Guid jobId, Guid workerId)
+    public async Task<QueryResult<Job>> StartJob(Guid jobId, Guid workerId)
     {
-        (IMessage? error, Job? job) = await jobRepository.GetAsync(jobId);
-        if (error is not null)
+        QueryResult<Job> jobQueryResult = await jobRepository.GetAsync(jobId);
+        if (jobQueryResult.NotFound)
         {
-            return new(error, null);
+            return jobQueryResult.ToQueryResult<Job>();
         }
-        error = job!.Start(workerId);
-        if (error is not null)
+        
+        Job job = jobQueryResult.Data;
+        Result result = job.Start(workerId);
+        if (!result.Ok)
         {
-            return new(error, null);
+            return result.ToQueryResult<Job>();
         }
-        error = await jobRepository.UnitOfWork.SaveEntitiesAsync();
-        if (error is not null)
+        Exception? exception = await jobRepository.UnitOfWork.SaveEntitiesAsync();
+        if (exception is not null)
         {
-            return new(error, null);
+            return QueryResults.ExceptionThrown<Job>(exception);
         }
-        return new(null, job);
+        return QueryResults.Ok<Job>();
     }
 
-    public async Task<(IMessage?, Job?)> CompleteJob(Guid jobId, Guid workerId)
+    public async Task<QueryResult<Job>> CompleteJob(Guid jobId, Guid workerId)
     {
-        (IMessage? error, Job? job) = await jobRepository.GetAsync(jobId);
-        if (error is not null)
+        QueryResult<Job> jobQueryResult = await jobRepository.GetAsync(jobId);
+        if (jobQueryResult.NotFound)
         {
-            return new(error, null);
+            return jobQueryResult.ToQueryResult<Job>();
         }
-
-        error = job!.Complete(workerId);
-        if (error is not null)
+        
+        Job job = jobQueryResult.Data;
+        Result result = job.Complete(workerId);
+        if (!result.Ok)
         {
-            return new(error, null);
+            return result.ToQueryResult<Job>();
         }
-        error = await jobRepository.UnitOfWork.SaveEntitiesAsync();
-        if (error is not null)
+        
+        Exception? exception = await jobRepository.UnitOfWork.SaveEntitiesAsync();
+        if (exception is not null)
         {
-            return new(error, null);
+            return QueryResults.ExceptionThrown<Job>(exception);
         }
-        return new(null, job);
+        return QueryResults.Ok<Job>();
     }
 
-    public async Task<(IMessage?, Job?)> FailJob(Guid jobId, Guid workerId)
+    public async Task<QueryResult<Job>> FailJob(Guid jobId, Guid workerId)
     {
-        (var error, Job? job) = await jobRepository.GetAsync(jobId);
-        if (error is not null)
+        QueryResult<Job> jobQueryResult = await jobRepository.GetAsync(jobId);
+        if (jobQueryResult.NotFound)
         {
-            return new(error, null);
+            return jobQueryResult.ToQueryResult<Job>();
         }
-
-        error = job!.Fail(workerId);
-        if (error is not null)
+        
+        Job job = jobQueryResult.Data;
+        Result result = job.Fail(workerId);
+        if (!result.Ok)
         {
-            return new(error, null);
+            return result.ToQueryResult<Job>();
         }
-        error = await jobRepository.UnitOfWork.SaveEntitiesAsync();
-        if (error is not null)
+        
+        Exception? exception = await jobRepository.UnitOfWork.SaveEntitiesAsync();
+        if (exception is not null)
         {
-            return new(error, null);
+            return QueryResults.ExceptionThrown<Job>(exception);
         }
-
-        return new(null, job);
+        return QueryResults.Ok<Job>();
     }
 
 }

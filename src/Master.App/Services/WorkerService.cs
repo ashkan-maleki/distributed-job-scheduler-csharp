@@ -10,41 +10,42 @@ public class WorkerService(IWorkerRepository workerRepository, SchedulerState sc
 {
     public async Task<List<Worker>> AllAsync() => await workerRepository.AllAsync();
 
-    public async Task<IMessage?> ScaleAsync(int count)
+    public async Task<Result> ScaleAsync(int count)
     {
-        IMessage? error = null;
-        Faker faker = new();
-        int workerCount = await workerRepository.CountAsync();
-        for (int i = 0; i < count - workerCount; i++)
-        {
-            error =  await workerRepository.AddAsync(new Worker(faker.Company.CompanyName()));
-            if (error != null)
-            {
-                return error;
-            }
-        }
-        while (workerCount > count)
-        {
-            (error, Worker? worker) = await workerRepository.FirstAsync();
-            if (error != null)
-            {
-                return error;
-            }
-            error = await workerRepository.RemoveAsync(worker!);
-            if (error != null)
-            {
-                return error;
-            }
-        }
-        error = await workerRepository.UnitOfWork.SaveEntitiesAsync();
-        if (error != null)
-        {
-            return error;
-        }
-        return null;
+        return await Task.FromResult(Results.Ok());
+        // Result error = null;
+        // Faker faker = new();
+        // int workerCount = await workerRepository.CountAsync();
+        // for (int i = 0; i < count - workerCount; i++)
+        // {
+        //     error =  await workerRepository.AddAsync(new Worker(faker.Company.CompanyName()));
+        //     if (error != null)
+        //     {
+        //         return error;
+        //     }
+        // }
+        // while (workerCount > count)
+        // {
+        //     (error, Worker? worker) = await workerRepository.FirstAsync();
+        //     if (error != null)
+        //     {
+        //         return error;
+        //     }
+        //     error = await workerRepository.RemoveAsync(worker!);
+        //     if (error != null)
+        //     {
+        //         return error;
+        //     }
+        // }
+        // error = await workerRepository.UnitOfWork.SaveEntitiesAsync();
+        // if (error != null)
+        // {
+        //     return error;
+        // }
+        // return null;
     }
 
-    public async Task<(IMessage?, Worker?)> RegisterAsync(string name)
+    public async Task<QueryResult<Worker>> RegisterAsync(string name)
     {
         int count = await workerRepository.CountAsync();
         // if (schedulerState.DesiredNumberOfWorkers >= schedulerState.CurrentNumberOfWorkers)
@@ -54,35 +55,49 @@ public class WorkerService(IWorkerRepository workerRepository, SchedulerState sc
 
         if (count >= schedulerState.DesiredNumberOfWorkers)
         {
-            return new(new WaitingSignalForWorkersError("We cannot register new workers now; wait."), null);
+            return QueryResults.DomainFailure<Worker>("We cannot register new workers now; wait.");
         }
         
-        (IMessage? error, Worker? worker) = await workerRepository.GetByNameAsync(name);
-        if (error != null)
+        QueryResult<Worker> workerQueryResult = await workerRepository.GetByNameAsync(name);
+        Worker worker;
+        if (workerQueryResult.Found)
+        {
+            worker = workerQueryResult.Data;
+        }
+        else
         {
             worker = new (name);
             _ = workerRepository.AddAsync(worker);
         }
         
-        worker!.Register();
-        
-        return new(await workerRepository.UnitOfWork.SaveEntitiesAsync(), worker);
+        worker.Register();
+        Exception? exception = await workerRepository.UnitOfWork.SaveEntitiesAsync();
+        if (exception is not null)
+        {
+            return QueryResults.ExceptionThrown<Worker>(exception);
+        }
+        return QueryResults.Ok<Worker>();
     }
 
-    public Task<IMessage?> UnregisterAsync(Worker worker)
+    public Task<Result> UnregisterAsync(Worker worker)
     {
         throw new NotImplementedException();
     }
 
-    public async Task<IMessage?> ReportHeartBeatAsync(Guid workerId)
+    public async Task<Result> ReportHeartBeatAsync(Guid workerId)
     {
-        (IMessage? error, Worker? worker) = await workerRepository.GetAsync(workerId);
-        if (error != null)
+        QueryResult<Worker> workerQueryResult = await workerRepository.GetAsync(workerId);
+        if (workerQueryResult.NotFound)
         {
-            return error;
+            return workerQueryResult;
         }
-        worker!.ReportHeartBeat();
-        error = await workerRepository.UnitOfWork.SaveEntitiesAsync();
-        return error;
+        Worker worker = workerQueryResult.Data;
+        worker.ReportHeartBeat();
+        Exception? exception = await workerRepository.UnitOfWork.SaveEntitiesAsync();
+        if (exception is not null)
+        {
+            return QueryResults.ExceptionThrown<Worker>(exception);
+        }
+        return QueryResults.Ok<Worker>();
     }
 }
