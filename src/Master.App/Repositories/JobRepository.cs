@@ -11,9 +11,8 @@ public class JobRepository() : IJobRepository
 {
     private readonly SchedulerDbContext _context;
     public IUnitOfWork UnitOfWork => _context;
-    
+
     object @lock = new object();
-    // ConcurrentDictionary<Guid, Job> jobs = new();
 
     public JobRepository(SchedulerDbContext context) : this()
     {
@@ -26,7 +25,7 @@ public class JobRepository() : IJobRepository
             // item.Queue();
             Job job1 = new Job("Job 3: Work on the garden");
             // item.Queue();
-        
+
             _context.Jobs.AddRange(item, item1, job1);
             _ = UnitOfWork.SaveEntitiesAsync();
         }
@@ -34,21 +33,33 @@ public class JobRepository() : IJobRepository
 
 
     public async Task<List<Job>> AllAsync() => await _context.Jobs.ToListAsync();
-
-    public async Task<IMessage?> AddAsync(Job job)
+    
+    public async Task<QueryResult<Job>> GetAsync(Guid jobId)
     {
-        _ = await _context.Jobs.AddAsync(job);
-        return null;
-    }
+        Job? job = await _context.Jobs.Where(j => j.Id == jobId).FirstOrDefaultAsync();
+        if (job is null)
+        {
+            return QueryResults.NotFound<Job>($"There are no job in queue with id as {jobId}");
+        }
 
-    public async Task<(IMessage?, Job?)> DequeueAsync()
+        return QueryResults.Found(job);
+    }
+    
+    public async Task<QueryResult<Job>> DequeueAsync()
     {
         Job? queuedJob = await _context.Jobs.Where(j => j.State == JobState.Queued).FirstOrDefaultAsync();
-        if (queuedJob == null)
+        if (queuedJob is null)
         {
-            return new(new JobRepositoryNotFoundError($"There are no job in queue"), null);
+            return QueryResults.NotFound<Job>("There are no job in queue");
         }
-        return (null, queuedJob);
+
+        return QueryResults.Found(queuedJob);
+    }
+
+    public async Task<Result> AddAsync(Job job)
+    {
+        _ = await _context.Jobs.AddAsync(job);
+        return Results.Ok();
     }
 
     // public async Task<IError?> Update(Job newJob,  Job oldJob)
@@ -57,15 +68,5 @@ public class JobRepository() : IJobRepository
     //     return null;
     // }
 
-    public async Task<(IMessage?, Job?)> GetAsync(Guid jobId)
-    {
-        Job? job = await _context.Jobs.Where(j => j.Id == jobId).FirstOrDefaultAsync();
-        if (job == null)
-        {
-            return new(new JobRepositoryNotFoundError($"There are no job in queue with id as {jobId}"), null);
-        }
-        return (null, job);
-    }
 
-    
 }
