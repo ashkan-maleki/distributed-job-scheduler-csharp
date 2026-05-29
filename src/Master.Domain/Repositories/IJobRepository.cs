@@ -8,7 +8,7 @@ public interface IJobRepository : IRepository
 {
     public Task<List<Job>> AllAsync();
     public Task<QueryResult<Job>> GetAsync(Guid jobId);
-    public Task<QueryResult<Job>> DequeueAsync();
+    public Task<QueryResult<Job>> GetQueuedJobAsync();
     public Task<Result> AddAsync(Job job);
     
     // public Task<IError?> Update(Job newJob, Job oldJob);

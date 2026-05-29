@@ -45,7 +45,7 @@ public class JobRepository() : IJobRepository
         return QueryResults.Found(job);
     }
     
-    public async Task<QueryResult<Job>> DequeueAsync()
+    public async Task<QueryResult<Job>> GetQueuedJobAsync()
     {
         Job? queuedJob = await _context.Jobs.Where(j => j.State == JobState.Queued).FirstOrDefaultAsync();
         if (queuedJob is null)
