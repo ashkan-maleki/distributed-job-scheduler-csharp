@@ -8,11 +8,8 @@ public interface IJobRepository : IRepository
 {
     public Task<List<Job>> AllAsync();
 
-    public Task<IMessage?> AddAsync(Job job);
-    public Task<(IMessage?, Job?)> DequeueAsync();
+    public Task<Result> AddAsync(Job job);
+    public Task<QueryResult<Job>> DequeueAsync();
     // public Task<IError?> Update(Job newJob, Job oldJob);
-    public Task<(IMessage?, Job?)> GetAsync(Guid jobId);
+    public Task<QueryResult<Job>> GetAsync(Guid jobId);
 }
-
-public class JobRepositoryOperationError(string content) : Error<IJobRepository>(content);
-public class JobRepositoryNotFoundError(string content) : Error<IJobRepository>(content);

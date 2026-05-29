@@ -9,14 +9,11 @@ public interface IWorkerRepository : IRepository
     public Task<List<Worker>> AllAsync();
     public Task<int> CountAsync();
     
-    public Task<IMessage?> AddAsync(Worker worker);
-    public Task<IMessage?> RemoveAsync(Worker worker);
+    public Task<Result> AddAsync(Worker worker);
+    public Task<Result> RemoveAsync(Worker worker);
     
-    public Task<(IMessage?, Worker?)> GetAsync(Guid workerId);
-    public Task<(IMessage?, Worker?)> GetByNameAsync(string name);
-    public Task<(IMessage?, Worker?)> GetDeadWorkerByNameAsync(string name);
-    public Task<(IMessage?, Worker?)> FirstAsync();
+    public Task<QueryResult<Worker>> GetAsync(Guid workerId);
+    public Task<QueryResult<Worker>> GetByNameAsync(string name);
+    public Task<QueryResult<Worker>> GetDeadWorkerByNameAsync(string name);
+    public Task<QueryResult<Worker>> FirstAsync();
 }
-
-public class WorkerRepositoryOperationError(string content) : Error<IWorkerRepository>(content);
-public class WorkerRepositoryNotFoundError(string content) : Error<IWorkerRepository>(content);
