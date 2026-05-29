@@ -51,7 +51,7 @@ public class JobService(IJobRepository jobRepository, IWorkerRepository workerRe
         {
             return QueryResults.ExceptionThrown<Job>(exception);
         }
-        return QueryResults.Ok<Job>();
+        return QueryResults.Found(job);
     }
 
     public async Task<QueryResult<Job>> StartJob(Guid jobId, Guid workerId)
@@ -73,7 +73,7 @@ public class JobService(IJobRepository jobRepository, IWorkerRepository workerRe
         {
             return QueryResults.ExceptionThrown<Job>(exception);
         }
-        return QueryResults.Ok<Job>();
+        return QueryResults.Found(job);
     }
 
     public async Task<QueryResult<Job>> CompleteJob(Guid jobId, Guid workerId)
@@ -96,7 +96,7 @@ public class JobService(IJobRepository jobRepository, IWorkerRepository workerRe
         {
             return QueryResults.ExceptionThrown<Job>(exception);
         }
-        return QueryResults.Ok<Job>();
+        return QueryResults.Found(job);
     }
 
     public async Task<QueryResult<Job>> FailJob(Guid jobId, Guid workerId)
@@ -119,7 +119,7 @@ public class JobService(IJobRepository jobRepository, IWorkerRepository workerRe
         {
             return QueryResults.ExceptionThrown<Job>(exception);
         }
-        return QueryResults.Ok<Job>();
+        return QueryResults.Found(job);
     }
 
 }

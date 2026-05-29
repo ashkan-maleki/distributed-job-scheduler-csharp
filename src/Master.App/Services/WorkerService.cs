@@ -1,5 +1,4 @@
-﻿using Bogus;
-using Master.Domain.Models;
+﻿using Master.Domain.Models;
 using Master.Domain.Repositories;
 using Master.Domain.Services;
 using Shared.Domain.DTOs;
@@ -67,7 +66,7 @@ public class WorkerService(IWorkerRepository workerRepository, SchedulerState sc
         else
         {
             worker = new (name);
-            _ = workerRepository.AddAsync(worker);
+            _ = await workerRepository.AddAsync(worker);
         }
         
         worker.Register();
@@ -76,7 +75,7 @@ public class WorkerService(IWorkerRepository workerRepository, SchedulerState sc
         {
             return QueryResults.ExceptionThrown<Worker>(exception);
         }
-        return QueryResults.Ok<Worker>();
+        return QueryResults.Found(worker);
     }
 
     public Task<Result> UnregisterAsync(Worker worker)

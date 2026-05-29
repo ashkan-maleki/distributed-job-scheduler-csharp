@@ -2,7 +2,6 @@
 using Master.Domain.Services;
 using Master.Rest.DTOs;
 using Microsoft.AspNetCore.Http.HttpResults;
-using Shared.Domain.DTOs;
 
 namespace Master.Rest.Apis;
 
