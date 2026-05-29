@@ -15,9 +15,9 @@ public interface IJobHttpClient
 
 public record JobResultRequest(Guid JobId, Guid WorkerId, bool Successful, string? ErrorMessage);
 
-public class PollingFailureError(string content) : Error<IJobHttpClient>(content);
-public class StartingJobError(string content) : Error<IJobHttpClient>(content);
-public class CompletingJobError(string content) : Error<IJobHttpClient>(content);
+public class PollingFailureError(string content) : Error(content);
+public class StartingJobError(string content) : Error(content);
+public class CompletingJobError(string content) : Error(content);
 
 public class JobHttpClient(HttpClient client, IOptions<ApiConfig> options) : IJobHttpClient
 {
