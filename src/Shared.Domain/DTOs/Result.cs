@@ -83,6 +83,7 @@ public class Result
     
     public bool Ok => Status == ResultStatus.Ok;
     public virtual bool NotFound => Status == ResultStatus.NotFound;
+    public bool DomainError => Status == ResultStatus.DomainError;
 
     public bool TryGetException([NotNullWhen(true)] out Exception? exception)
     {
