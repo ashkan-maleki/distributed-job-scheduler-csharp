@@ -80,6 +80,9 @@ public class Result
 
     [MemberNotNullWhen(true, nameof(Message))]
     public bool ErrorRaised => (!string.IsNullOrEmpty(Message) && !Success && !ExceptionThrown);
+    
+    public bool Ok => Status == ResultStatus.Ok;
+    public virtual bool NotFound => Status == ResultStatus.NotFound;
 
     public bool TryGetException([NotNullWhen(true)] out Exception? exception)
     {
@@ -119,6 +122,8 @@ public class QueryResult<T> : Result
     [MemberNotNullWhen(true, nameof(Data))]
     public bool Found => (Data is not null && Status == ResultStatus.Found);
 
+    [MemberNotNullWhen(false, nameof(Data))]
+    public override bool NotFound  => !Found;
 
     public bool TryGetData([NotNullWhen(true)] out T? data)
     {
