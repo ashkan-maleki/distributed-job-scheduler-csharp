@@ -19,33 +19,33 @@ public class Job()
         Name = name;
     }
 
-    private Result ChangeState(JobState oldState, JobState newState, Guid workerId)
+    private DomainResult ChangeState(JobState oldState, JobState newState, Guid workerId)
     {
         if (WorkerId is not null && WorkerId != workerId)
         {
-            return Results.DomainFailure(
+            return DomainResult.Error(
                 $"Job is already assigned to another worker, {WorkerId}, requesting worker {workerId}.");
         }
 
         if (State != oldState)
         {
-            return Results.DomainFailure(
+            return DomainResult.Error(
                 $"Job is in wrong state, current state: {State}, expected current state: {oldState}.");
         }
 
         WorkerId ??= workerId;
         State = newState;
         Version++;
-        return Results.Ok();
+        return DomainResult.Ok();
     }
 
-    public Result Assign(Guid workerId) => ChangeState(JobState.Queued, JobState.Assigned, workerId);
+    public DomainResult Assign(Guid workerId) => ChangeState(JobState.Queued, JobState.Assigned, workerId);
 
-    public Result Start(Guid workerId) => ChangeState(JobState.Assigned, JobState.Running, workerId);
+    public DomainResult Start(Guid workerId) => ChangeState(JobState.Assigned, JobState.Running, workerId);
 
-    public Result Complete(Guid workerId) => ChangeState(JobState.Running, JobState.Completed, workerId);
+    public DomainResult Complete(Guid workerId) => ChangeState(JobState.Running, JobState.Completed, workerId);
 
-    public Result Fail(Guid workerId) => ChangeState(JobState.Running, JobState.Failed, workerId);
+    public DomainResult Fail(Guid workerId) => ChangeState(JobState.Running, JobState.Failed, workerId);
 }
 
 class JobDeprecated()

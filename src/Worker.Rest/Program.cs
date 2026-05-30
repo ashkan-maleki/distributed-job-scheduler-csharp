@@ -24,8 +24,8 @@ builder.Services.AddOpenApi();
 
 builder.Services.AddHostedService<MasterHealthCheckBackgroundService>()
     .AddHostedService<RegistrationBackgroundService>()
-    .AddHostedService<HeartBeatBackgroundService>()
-    .AddHostedService<JobBackgroundService>()
+    // .AddHostedService<HeartBeatBackgroundService>()
+    // .AddHostedService<JobBackgroundService>()
     ;
 // builder.Services.AddHostedService<SimpleWorker>();
 // builder.Services.AddHostedService<ParallelWorker>();
