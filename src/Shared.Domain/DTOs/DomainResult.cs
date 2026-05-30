@@ -10,7 +10,7 @@ public enum DomainResultStatus
 
 public class DomainResult
 {
-    private DomainResultStatus Status { get; set; }
+    private DomainResultStatus Status { get; }
     private string? Message { get; }
     
     private DomainResult(string message)
@@ -26,6 +26,13 @@ public class DomainResult
     
     [MemberNotNullWhen(true, nameof(Message))]
     public bool Invalid => Status == DomainResultStatus.Invalid;
+
+    public bool TryGetError([NotNullWhen(true)] out string? error)
+    {
+        error = Message;
+        return Status == DomainResultStatus.Invalid;
+    }
+    
     public static DomainResult Ok() => new();
     public static DomainResult Error(string message) => new(message);
 }
