@@ -44,7 +44,7 @@ public class JobBackgroundService(
                 continue;
             }
 
-            (IMessage? error, Job? job) = await jobHttpClient.GetJobAsync(worker.Id, stoppingToken);
+            (IContentMessage? error, Job? job) = await jobHttpClient.GetJobAsync(worker.Id, stoppingToken);
             if (error != null)
             {
                 logger.LogError(error.ToString());

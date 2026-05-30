@@ -34,7 +34,7 @@ public class JobRepository() : IJobRepository
 
     public async Task<List<Job>> AllAsync() => await _context.Jobs.ToListAsync();
     
-    public async Task<QueryResult<Job>> GetAsync(Guid jobId)
+    public async Task<QueryResult2<Job>> GetAsync(Guid jobId)
     {
         Job? job = await _context.Jobs.Where(j => j.Id == jobId).FirstOrDefaultAsync();
         if (job is null)
@@ -45,7 +45,7 @@ public class JobRepository() : IJobRepository
         return QueryResults.Found(job);
     }
     
-    public async Task<QueryResult<Job>> GetQueuedJobAsync()
+    public async Task<QueryResult2<Job>> GetQueuedJobAsync()
     {
         Job? queuedJob = await _context.Jobs.Where(j => j.State == JobState.Queued).FirstOrDefaultAsync();
         if (queuedJob is null)
@@ -56,7 +56,7 @@ public class JobRepository() : IJobRepository
         return QueryResults.Found(queuedJob);
     }
 
-    public async Task<Result> AddAsync(Job job)
+    public async Task<Result2> AddAsync(Job job)
     {
         _ = await _context.Jobs.AddAsync(job);
         return Results.Ok();

@@ -5,69 +5,69 @@ namespace Master.Rest.DTOs;
 
 public static class HttpTypedResult
 {
-    private static IResult ToHttpIResultFromResult(Result result, string? message = null)
+    private static IResult ToHttpIResultFromResult(Result2 result2, string? message = null)
     {
-        if (result.HasMessage || result.ErrorRaised)
+        if (result2.HasMessage || result2.ErrorRaised)
         {
-            message ??= result.Message;    
+            message ??= result2.Message;    
         }
 
-        if (result.Ok && string.IsNullOrWhiteSpace(message))
+        if (result2.Ok && string.IsNullOrWhiteSpace(message))
         {
             return TypedResults.Ok();
         }
         
-        if (result.DomainError)
+        if (result2.DomainError)
         {
             return TypedResults.BadRequest(message);
         } 
-        if (result.NotFound)
+        if (result2.NotFound)
         {
             return TypedResults.NotFound(message);
         } 
         return TypedResults.Ok();
     }
 
-    public static IResult ToHttpIResult(this Result result, string? message = null) 
-        => ToHttpIResultFromResult(result, message);
+    public static IResult ToHttpIResult(this Result2 result2, string? message = null) 
+        => ToHttpIResultFromResult(result2, message);
 
-    public static IResult ToHttpIResult<T>(this QueryResult<T> result, string? message = null)
+    public static IResult ToHttpIResult<T>(this QueryResult2<T> result2, string? message = null)
     {
-        if (result.TryGetData(out var data))
+        if (result2.TryGetData(out var data))
         {
             return TypedResults.Ok(data);
         }
-        return ToHttpIResultFromResult(result, message);
+        return ToHttpIResultFromResult(result2, message);
     }
 
     public static Results<T1, T2> From<T1, T2>
-        (Result result, string? message = null) where T1 : IResult where T2 : IResult
+        (Result2 result2, string? message = null) where T1 : IResult where T2 : IResult
     {
-        IResult res = result.ToHttpIResult(message);
+        IResult res = result2.ToHttpIResult(message);
         var typedResult = (Results<T1, T2>)res;
         return typedResult;
     }
     
     public static Results<T1, T2> From<T, T1, T2>
-        (QueryResult<T> result, string? message = null) where T1 : IResult where T2 : IResult
+        (QueryResult2<T> result2, string? message = null) where T1 : IResult where T2 : IResult
     {
-        IResult res = result.ToHttpIResult(message);
+        IResult res = result2.ToHttpIResult(message);
         var typedResult = (Results<T1, T2>)res;
         return typedResult;
     }
     
     public static Results<T1, T2, T3> From<T1, T2, T3>
-        (Result result, string? message = null) where T1 : IResult where T2 : IResult where T3 : IResult
+        (Result2 result2, string? message = null) where T1 : IResult where T2 : IResult where T3 : IResult
     {
-        IResult res = result.ToHttpIResult(message);
+        IResult res = result2.ToHttpIResult(message);
         var typedResult = (Results<T1, T2, T3>)res;
         return typedResult;
     }
     
     public static Results<T1, T2, T3> From<T, T1, T2, T3>
-        (QueryResult<T> result, string? message = null) where T1 : IResult where T2 : IResult where T3 : IResult
+        (QueryResult2<T> result2, string? message = null) where T1 : IResult where T2 : IResult where T3 : IResult
     {
-        IResult res = result.ToHttpIResult(message);
+        IResult res = result2.ToHttpIResult(message);
         var typedResult = (Results<T1, T2, T3>)res;
         return typedResult;
     }

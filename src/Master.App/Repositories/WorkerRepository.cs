@@ -16,19 +16,19 @@ public class WorkerRepository(SchedulerDbContext context) : IWorkerRepository
 
     public async Task<int> CountAsync() => await context.Workers.CountAsync();
 
-    public async Task<Result> AddAsync(Worker worker)
+    public async Task<Result2> AddAsync(Worker worker)
     {
         _ = await context.Workers.AddAsync(worker);
         return Results.Ok();
     }
 
-    public async Task<Result> RemoveAsync(Worker worker)
+    public async Task<Result2> RemoveAsync(Worker worker)
     {
         _ = context.Workers.Remove(worker);
         return await Task.FromResult(Results.Ok());
     }
 
-    private static QueryResult<Worker> CheckIfWorkerIsNull(Worker? worker, string notFoundError)
+    private static QueryResult2<Worker> CheckIfWorkerIsNull(Worker? worker, string notFoundError)
     {
         if (worker is null)
         {
@@ -38,22 +38,22 @@ public class WorkerRepository(SchedulerDbContext context) : IWorkerRepository
         return QueryResults.Found(worker);
     }
 
-    public async Task<QueryResult<Worker>> GetAsync(Guid workerId) => CheckIfWorkerIsNull(
+    public async Task<QueryResult2<Worker>> GetAsync(Guid workerId) => CheckIfWorkerIsNull(
         await context.Workers.Where(w => w.Id == workerId).FirstOrDefaultAsync(),
         $"There is no worker with id ({workerId}) in the list");
 
-    public async Task<QueryResult<Worker>> GetByNameAsync(string name) =>
+    public async Task<QueryResult2<Worker>> GetByNameAsync(string name) =>
         CheckIfWorkerIsNull(await context.Workers.Where(w => w.Name == name).FirstOrDefaultAsync(),
             $"There is no worker with name ({name}) in the list");
 
-    public async Task<QueryResult<Worker>> GetDeadWorkerByNameAsync(string name) =>
+    public async Task<QueryResult2<Worker>> GetDeadWorkerByNameAsync(string name) =>
         CheckIfWorkerIsNull(await context.Workers
                 .Where(w => w.CurrentState == WorkerState.Dead && w.Name == name)
                 .FirstOrDefaultAsync(),
             $"There is no worker with name ({name}) in the list");
 
 
-    public async Task<QueryResult<Worker>> FirstAsync() =>
+    public async Task<QueryResult2<Worker>> FirstAsync() =>
         CheckIfWorkerIsNull(await context.Workers.FirstOrDefaultAsync(),
             $"There is no worker in the list");
 }

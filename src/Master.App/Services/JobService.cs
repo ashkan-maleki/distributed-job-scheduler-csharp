@@ -10,13 +10,13 @@ public class JobService(IJobRepository jobRepository, IWorkerRepository workerRe
 {
     public async Task<List<Job>> AllAsync() => await jobRepository.AllAsync();
 
-    public async Task<QueryResult<Job>> QueueJob(string name)
+    public async Task<QueryResult2<Job>> QueueJob(string name)
     {
         Job job = new Job(name);
-        Result result = await jobRepository.AddAsync(job);
-        if (!result.Ok)
+        Result2 result2 = await jobRepository.AddAsync(job);
+        if (!result2.Ok)
         {
-            return result.ToQueryResult<Job>();
+            return result2.ToQueryResult<Job>();
         }
         Exception? exception = await jobRepository.UnitOfWork.SaveEntitiesAsync();
         if (exception is not null)
@@ -26,25 +26,25 @@ public class JobService(IJobRepository jobRepository, IWorkerRepository workerRe
         return QueryResults.Ok<Job>();
     }
 
-    public async Task<QueryResult<Job>> AssignJob(Guid workerId)
+    public async Task<QueryResult2<Job>> AssignJob(Guid workerId)
     {
-        QueryResult<Job> jobQueryResult = await jobRepository.GetQueuedJobAsync();
-        if (jobQueryResult.NotFound)
+        QueryResult2<Job> jobQueryResult2 = await jobRepository.GetQueuedJobAsync();
+        if (jobQueryResult2.NotFound)
         {
-            return jobQueryResult.ToQueryResult<Job>();
+            return jobQueryResult2.ToQueryResult<Job>();
         }
 
-        QueryResult<Worker> workerQueryResult = await workerRepository.GetAsync(workerId);
-        if (workerQueryResult.NotFound)
+        QueryResult2<Worker> workerQueryResult2 = await workerRepository.GetAsync(workerId);
+        if (workerQueryResult2.NotFound)
         {
-            return  workerQueryResult.SwapPayload<Job>();
+            return  workerQueryResult2.SwapPayload<Job>();
         }
 
-        Job job = jobQueryResult.Data;
-        DomainResult domainResult = job.Assign(workerId);
-        if (domainResult.TryGetError(out var error))
+        Job job = jobQueryResult2.Data;
+        IResult result = job.Assign(workerId);
+        if (result is Error error)
         {
-            return QueryResults.DomainFailure<Job>(error);
+            return QueryResults.DomainFailure<Job>(error.Content);
         }
         Exception? exception = await jobRepository.UnitOfWork.SaveEntitiesAsync();
         if (exception is not null)
@@ -54,17 +54,17 @@ public class JobService(IJobRepository jobRepository, IWorkerRepository workerRe
         return QueryResults.Found(job);
     }
 
-    public async Task<QueryResult<Job>> StartJob(Guid jobId, Guid workerId)
+    public async Task<QueryResult2<Job>> StartJob(Guid jobId, Guid workerId)
     {
-        QueryResult<Job> jobQueryResult = await jobRepository.GetAsync(jobId);
-        if (jobQueryResult.NotFound)
+        QueryResult2<Job> jobQueryResult2 = await jobRepository.GetAsync(jobId);
+        if (jobQueryResult2.NotFound)
         {
-            return jobQueryResult.ToQueryResult<Job>();
+            return jobQueryResult2.ToQueryResult<Job>();
         }
         
-        Job job = jobQueryResult.Data;
-        Result result = job.Start(workerId);
-        if (!result.Ok)
+        Job job = jobQueryResult2.Data;
+        IResult result = job.Start(workerId);
+        if (result is Error error)
         {
             return result.ToQueryResult<Job>();
         }
@@ -76,19 +76,19 @@ public class JobService(IJobRepository jobRepository, IWorkerRepository workerRe
         return QueryResults.Found(job);
     }
 
-    public async Task<QueryResult<Job>> CompleteJob(Guid jobId, Guid workerId)
+    public async Task<QueryResult2<Job>> CompleteJob(Guid jobId, Guid workerId)
     {
-        QueryResult<Job> jobQueryResult = await jobRepository.GetAsync(jobId);
-        if (jobQueryResult.NotFound)
+        QueryResult2<Job> jobQueryResult2 = await jobRepository.GetAsync(jobId);
+        if (jobQueryResult2.NotFound)
         {
-            return jobQueryResult.ToQueryResult<Job>();
+            return jobQueryResult2.ToQueryResult<Job>();
         }
         
-        Job job = jobQueryResult.Data;
-        Result result = job.Complete(workerId);
-        if (!result.Ok)
+        Job job = jobQueryResult2.Data;
+        Result2 result2 = job.Complete(workerId);
+        if (!result2.Ok)
         {
-            return result.ToQueryResult<Job>();
+            return result2.ToQueryResult<Job>();
         }
         
         Exception? exception = await jobRepository.UnitOfWork.SaveEntitiesAsync();
@@ -99,19 +99,19 @@ public class JobService(IJobRepository jobRepository, IWorkerRepository workerRe
         return QueryResults.Found(job);
     }
 
-    public async Task<QueryResult<Job>> FailJob(Guid jobId, Guid workerId)
+    public async Task<QueryResult2<Job>> FailJob(Guid jobId, Guid workerId)
     {
-        QueryResult<Job> jobQueryResult = await jobRepository.GetAsync(jobId);
-        if (jobQueryResult.NotFound)
+        QueryResult2<Job> jobQueryResult2 = await jobRepository.GetAsync(jobId);
+        if (jobQueryResult2.NotFound)
         {
-            return jobQueryResult.ToQueryResult<Job>();
+            return jobQueryResult2.ToQueryResult<Job>();
         }
         
-        Job job = jobQueryResult.Data;
-        Result result = job.Fail(workerId);
-        if (!result.Ok)
+        Job job = jobQueryResult2.Data;
+        Result2 result2 = job.Fail(workerId);
+        if (!result2.Ok)
         {
-            return result.ToQueryResult<Job>();
+            return result2.ToQueryResult<Job>();
         }
         
         Exception? exception = await jobRepository.UnitOfWork.SaveEntitiesAsync();

@@ -1,6 +1,6 @@
 namespace Shared.Domain.DTOs;
 
-public interface IMessage
+public interface IContentMessage
 {
     string Content { get; }
     

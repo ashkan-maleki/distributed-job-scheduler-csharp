@@ -9,7 +9,7 @@ public class WorkerService(IWorkerRepository workerRepository, SchedulerState sc
 {
     public async Task<List<Worker>> AllAsync() => await workerRepository.AllAsync();
 
-    public async Task<Result> ScaleAsync(int count)
+    public async Task<Result2> ScaleAsync(int count)
     {
         return await Task.FromResult(Results.Ok());
         // Result error = null;
@@ -44,7 +44,7 @@ public class WorkerService(IWorkerRepository workerRepository, SchedulerState sc
         // return null;
     }
 
-    public async Task<QueryResult<Worker>> RegisterAsync(string name)
+    public async Task<QueryResult2<Worker>> RegisterAsync(string name)
     {
         int count = await workerRepository.CountAsync();
         // if (schedulerState.DesiredNumberOfWorkers >= schedulerState.CurrentNumberOfWorkers)
@@ -57,11 +57,11 @@ public class WorkerService(IWorkerRepository workerRepository, SchedulerState sc
             return QueryResults.DomainFailure<Worker>("We cannot register new workers now; wait.");
         }
         
-        QueryResult<Worker> workerQueryResult = await workerRepository.GetByNameAsync(name);
+        QueryResult2<Worker> workerQueryResult2 = await workerRepository.GetByNameAsync(name);
         Worker worker;
-        if (workerQueryResult.Found)
+        if (workerQueryResult2.Found)
         {
-            worker = workerQueryResult.Data;
+            worker = workerQueryResult2.Data;
         }
         else
         {
@@ -78,19 +78,19 @@ public class WorkerService(IWorkerRepository workerRepository, SchedulerState sc
         return QueryResults.Found(worker);
     }
 
-    public Task<Result> UnregisterAsync(Worker worker)
+    public Task<Result2> UnregisterAsync(Worker worker)
     {
         throw new NotImplementedException();
     }
 
-    public async Task<Result> ReportHeartBeatAsync(Guid workerId)
+    public async Task<Result2> ReportHeartBeatAsync(Guid workerId)
     {
-        QueryResult<Worker> workerQueryResult = await workerRepository.GetAsync(workerId);
-        if (workerQueryResult.NotFound)
+        QueryResult2<Worker> workerQueryResult2 = await workerRepository.GetAsync(workerId);
+        if (workerQueryResult2.NotFound)
         {
-            return workerQueryResult;
+            return workerQueryResult2;
         }
-        Worker worker = workerQueryResult.Data;
+        Worker worker = workerQueryResult2.Data;
         worker.ReportHeartBeat();
         Exception? exception = await workerRepository.UnitOfWork.SaveEntitiesAsync();
         if (exception is not null)

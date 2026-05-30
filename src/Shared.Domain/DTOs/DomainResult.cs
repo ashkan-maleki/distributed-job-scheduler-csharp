@@ -3,12 +3,10 @@
 namespace Shared.Domain.DTOs;
 
 
-public interface IResult
-{
-    bool Failure { get; }
-    bool Success { get; }   
-    bool TryGetContent<T>(out T? content);
-}
+
+
+
+
 
 public enum DomainResultStatus
 {

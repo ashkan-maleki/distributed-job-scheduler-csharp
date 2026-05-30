@@ -4,22 +4,22 @@ namespace Shared.Domain.DTOs;
 
 public static class Results
 {
-    public static Result Ok() => new (ResultStatus.Ok);
-    public static Result NotFound(string message) => new(message, status: ResultStatus.NotFound);
-    public static Result DomainFailure(string message) => new(message, ResultStatus.DomainError);
-    public static Result ExceptionThrown(Exception exception) => new(exception);
+    public static Result2 Ok() => new (ResultStatus.Ok);
+    public static Result2 NotFound(string message) => new(message, status: ResultStatus.NotFound);
+    public static Result2 DomainFailure(string message) => new(message, ResultStatus.DomainError);
+    public static Result2 ExceptionThrown(Exception exception) => new(exception);
 }
 
 public static class QueryResults
 {
-    public static QueryResult<T> Ok<T>() => Results.Ok().ToQueryResult<T>();
-    public static QueryResult<T> Found<T>(T data) => new(data);
-    public static QueryResult<T> NotFound<T>(string message) => Results.NotFound(message).ToQueryResult<T>();
+    public static QueryResult2<T> Ok<T>() => Results.Ok().ToQueryResult<T>();
+    public static QueryResult2<T> Found<T>(T data) => new(data);
+    public static QueryResult2<T> NotFound<T>(string message) => Results.NotFound(message).ToQueryResult<T>();
 
-    public static QueryResult<T> DomainFailure<T>(string message) =>
+    public static QueryResult2<T> DomainFailure<T>(string message) =>
         Results.DomainFailure(message).ToQueryResult<T>();
 
-    public static QueryResult<T> ExceptionThrown<T>(Exception exception) =>
+    public static QueryResult2<T> ExceptionThrown<T>(Exception exception) =>
         Results.ExceptionThrown(exception).ToQueryResult<T>();
 }
 
@@ -32,7 +32,7 @@ public enum ResultStatus
     UnexpectedError
 }
 
-public class Result
+public class Result2
 {
     private bool Success => Status is ResultStatus.Found
         or ResultStatus.Ok;
@@ -44,28 +44,28 @@ public class Result
     public Exception? Exception { get; }
 
 
-    protected internal Result(ResultStatus status)
+    protected internal Result2(ResultStatus status)
     {
         Message = string.Empty;
         Exception = null;
         Status = status;
     }
 
-    protected Result(string? message, Exception? exception, ResultStatus status)
+    protected Result2(string? message, Exception? exception, ResultStatus status)
     {
         Message = message;
         Exception = exception;
         Status = status;
     }
 
-    protected internal Result(string message, ResultStatus status = ResultStatus.NotFound)
+    protected internal Result2(string message, ResultStatus status = ResultStatus.NotFound)
     {
         Message = message;
         Exception = null;
         Status = status;
     }
 
-    protected internal Result(Exception exception)
+    protected internal Result2(Exception exception)
     {
         Message = exception.Message;
         Exception = exception;
@@ -104,18 +104,18 @@ public class Result
     }
 }
 
-public class QueryResult<T> : Result
+public class QueryResult2<T> : Result2
 {
     public T? Data { get; }
 
 
-    protected internal QueryResult(string? message, Exception? exception, ResultStatus status)
+    protected internal QueryResult2(string? message, Exception? exception, ResultStatus status)
         : base(message, exception, status)
     {
     }
     
 
-    protected internal QueryResult(T data) : base(ResultStatus.Found)
+    protected internal QueryResult2(T data) : base(ResultStatus.Found)
     {
         Data = data;
     }
@@ -133,11 +133,11 @@ public class QueryResult<T> : Result
     }
 
 
-    public QueryResult<TNew> SwapPayload<TNew>() => new(Message, Exception, status: Status);
+    public QueryResult2<TNew> SwapPayload<TNew>() => new(Message, Exception, status: Status);
 }
 
 public static class QueryResultsExtensions
 {
-    public static QueryResult<T> ToQueryResult<T>(this Result result)
-        => new(result.Message, result.Exception, result.Status);
+    public static QueryResult2<T> ToQueryResult<T>(this Result2 result2)
+        => new(result2.Message, result2.Exception, result2.Status);
 }
