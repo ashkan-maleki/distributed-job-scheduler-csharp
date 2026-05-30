@@ -8,16 +8,16 @@ public interface IResult
     bool Failure { get; }
 }
 
-public interface IMessage : IResult
+public interface IText : IResult
 {
-    string Content { get; }
+    string Message { get; }
 }
 
 public interface IResult<T> : IResult;
 
-public interface IMessage<T> : IResult<T>, IMessage;
+public interface IText<T> : IResult<T>, IText;
 
-public interface IValue<T> : IResult<T>
+public interface IObject<T> : IResult<T>
 {
     T Value { get; }
 }
@@ -31,27 +31,29 @@ public abstract class Result(bool success) : IResult
 
 
 
-public abstract class Message(bool success, string content) : Result(success), IMessage
+public abstract class Text(bool success, string message) : Result(success), IText
 {
-    public string Content => content;
+    public string Message => message;
 }
 
-public class Success(string content) : Message(true, content);
-public class Error(string error) : Message(false, error);
+public class Success(string message) : Text(true, message);
+public class Error(string error) : Text(false, error);
 
-public abstract class Result<T>(bool success, T value) : Result(success), IValue<T>
+public abstract class Result<T>(bool success, T value) : Result(success), IObject<T>
 {
     public T Value => value;
 }
 
-public abstract class Message<T>(bool success, string content): Result(success), IMessage<T>
+public abstract class Text<T>(bool success, string message): Result(success), IText<T>
 {
-    public string Content => content;
+    public string Message => message;
 }
 
+public class Ok() : Result(true);
+
+public class CriticalError(string error) : Error(error);
 
 public class Ok<T>(T value) : Result<T>(true, value);
-public class Error<T>(string error) : Message<T>(false, error);
+public class Error<T>(string error) : Text<T>(false, error);
 
 
-public class Ok() : Result(true);
