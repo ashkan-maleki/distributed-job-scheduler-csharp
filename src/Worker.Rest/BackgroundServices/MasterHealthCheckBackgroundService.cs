@@ -15,6 +15,7 @@ public class MasterHealthCheckBackgroundService(ILogger<MasterHealthCheckBackgro
             if (available)
             {
                 context.MasterHeartbeatTime =  DateTime.Now;
+                logger.LogInformation($"Master responded at {DateTime.Now}");
                 await Task.Delay(TimeSpan.FromSeconds(9), stoppingToken);
             }
             else
