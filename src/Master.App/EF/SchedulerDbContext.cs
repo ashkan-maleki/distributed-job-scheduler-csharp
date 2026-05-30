@@ -1,12 +1,13 @@
 ﻿using Master.Domain.Aggregates;
 using Master.Domain.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Shared.Domain.DTOs;
 using Shared.Domain.EF;
 
 namespace Master.App.EF;
 
-public class SchedulerDbContext(DbContextOptions<SchedulerDbContext> options) 
+public class SchedulerDbContext(ILogger<SchedulerDbContext> logger, DbContextOptions<SchedulerDbContext> options) 
     : DbContext(options), IUnitOfWork
 {
     public DbSet<Job> Jobs { get; set; }
@@ -34,7 +35,7 @@ public class SchedulerDbContext(DbContextOptions<SchedulerDbContext> options)
         base.OnModelCreating(modelBuilder);
     }
 
-    public async Task<Exception?> SaveEntitiesAsync(CancellationToken cancellationToken = default)
+    public async Task<IResult> SaveEntitiesAsync(CancellationToken cancellationToken = default)
     {
         try
         {
@@ -42,14 +43,16 @@ public class SchedulerDbContext(DbContextOptions<SchedulerDbContext> options)
         }
         catch (DbUpdateConcurrencyException e)
         {
-            return e;
+            logger.LogCritical(e, "ConcurrencyException");
+            return new CriticalError("a concurrency violation is encountered while saving to the database.");
         }
         catch (DbUpdateException e)
         {
-            return e;
+            logger.LogCritical(e, "Exception");
+            return new CriticalError("an error is encountered while saving to the database.");;
         }
         
-        return null;
+        return new Ok();
     }
 }
 

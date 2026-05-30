@@ -42,7 +42,7 @@ public class JobService(IJobRepository jobRepository, IWorkerRepository workerRe
         IResult result = job.Assign(workerId);
         if (result is Error error)
         {
-            return QueryResults.DomainFailure<Job>(error.Content);
+            return QueryResults.DomainFailure<Job>(error.Message);
         }
         Exception? exception = await jobRepository.UnitOfWork.SaveEntitiesAsync();
         if (exception is not null)
