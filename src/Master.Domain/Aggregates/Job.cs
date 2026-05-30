@@ -19,33 +19,33 @@ public class Job()
         Name = name;
     }
 
-    private DomainResult ChangeState(JobState oldState, JobState newState, Guid workerId)
+    private IResult ChangeState(JobState oldState, JobState newState, Guid workerId)
     {
         if (WorkerId is not null && WorkerId != workerId)
         {
-            return DomainResult.Error(
+            return new Error(
                 $"Job is already assigned to another worker, {WorkerId}, requesting worker {workerId}.");
         }
 
         if (State != oldState)
         {
-            return DomainResult.Error(
+            return new Error(
                 $"Job is in wrong state, current state: {State}, expected current state: {oldState}.");
         }
 
         WorkerId ??= workerId;
         State = newState;
         Version++;
-        return DomainResult.Ok();
+        return new Ok();
     }
 
-    public DomainResult Assign(Guid workerId) => ChangeState(JobState.Queued, JobState.Assigned, workerId);
+    public IResult Assign(Guid workerId) => ChangeState(JobState.Queued, JobState.Assigned, workerId);
 
-    public DomainResult Start(Guid workerId) => ChangeState(JobState.Assigned, JobState.Running, workerId);
+    public IResult Start(Guid workerId) => ChangeState(JobState.Assigned, JobState.Running, workerId);
 
-    public DomainResult Complete(Guid workerId) => ChangeState(JobState.Running, JobState.Completed, workerId);
+    public IResult Complete(Guid workerId) => ChangeState(JobState.Running, JobState.Completed, workerId);
 
-    public DomainResult Fail(Guid workerId) => ChangeState(JobState.Running, JobState.Failed, workerId);
+    public IResult Fail(Guid workerId) => ChangeState(JobState.Running, JobState.Failed, workerId);
 }
 
 class JobDeprecated()
@@ -66,7 +66,7 @@ class JobDeprecated()
         // Version = 1;
     }
 
-    private Result ChangeState(JobState oldState, JobState newState, Guid? workerId = null)
+    private Result2 ChangeState(JobState oldState, JobState newState, Guid? workerId = null)
     {
         if (workerId is not null && WorkerId != workerId)
         {
@@ -84,7 +84,7 @@ class JobDeprecated()
         return Results.Ok();
     }
 
-    public Result Assign(Guid workerId)
+    public Result2 Assign(Guid workerId)
     {
         WorkerId = workerId;
         return ChangeState(JobState.Queued, JobState.Assigned);
@@ -99,7 +99,7 @@ class JobDeprecated()
         // return Results.NoContent();
     }
 
-    public Result Start(Guid workerId)
+    public Result2 Start(Guid workerId)
     {
         return ChangeState(JobState.Assigned, JobState.Running, workerId);
         // if (WorkerId != workerId)
@@ -117,7 +117,7 @@ class JobDeprecated()
         // return Results.NoContent();
     }
 
-    public Result Complete(Guid workerId)
+    public Result2 Complete(Guid workerId)
     {
         return ChangeState(JobState.Running, JobState.Completed, workerId);
         // if (WorkerId != workerId)
@@ -135,7 +135,7 @@ class JobDeprecated()
         // return Results.NoContent();
     }
 
-    public Result Fail(Guid workerId)
+    public Result2 Fail(Guid workerId)
     {
         return ChangeState(JobState.Running, JobState.Failed, workerId);
         // if (WorkerId != workerId)
