@@ -2,6 +2,7 @@
 using Master.Domain.Aggregates;
 using Master.Domain.Repositories;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Shared.Domain.DTOs;
 using Shared.Domain.EF;
 
@@ -56,11 +57,7 @@ public class JobRepository() : IJobRepository
         return QueryResults.Found(queuedJob);
     }
 
-    public async Task<Result2> AddAsync(Job job)
-    {
-        _ = await _context.Jobs.AddAsync(job);
-        return Results.Ok();
-    }
+    public async Task AddAsync(Job job) => _ = await _context.Jobs.AddAsync(job);
 
     // public async Task<IError?> Update(Job newJob,  Job oldJob)
     // {
