@@ -2,35 +2,46 @@
 
 namespace Shared.Domain.DTOs;
 
+
+public interface IResult
+{
+    bool Failure { get; }
+    bool Success { get; }   
+    bool TryGetContent<T>(out T? content);
+}
+
 public enum DomainResultStatus
 {
-    Valid,
-    Invalid,
+    Success,
+    Failure,
 }
 
 public class DomainResult
 {
     private DomainResultStatus Status { get; }
-    private string? Message { get; }
+    private string? Content { get; }
     
     private DomainResult(string message)
     {
-        Message = message;
-        Status = DomainResultStatus.Invalid;
+        Content = message;
+        Status = DomainResultStatus.Failure;
     }
     
     private DomainResult()
     {
-        Status = DomainResultStatus.Valid;
+        Status = DomainResultStatus.Success;
     }
     
-    [MemberNotNullWhen(true, nameof(Message))]
-    public bool Invalid => Status == DomainResultStatus.Invalid;
+    [MemberNotNullWhen(true, nameof(Content))]
+    public bool Failure => Status == DomainResultStatus.Failure;
 
+    [MemberNotNullWhen(true, nameof(Content))]
+    public bool Success => Status == DomainResultStatus.Success;
+    
     public bool TryGetError([NotNullWhen(true)] out string? error)
     {
-        error = Message;
-        return Status == DomainResultStatus.Invalid;
+        error = Content;
+        return Status == DomainResultStatus.Failure;
     }
     
     public static DomainResult Ok() => new();
