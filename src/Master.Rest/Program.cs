@@ -43,5 +43,4 @@ app.MapGroup("/api").MapJobsApi().MapWorkersApi().MapSchedulerStatesApi().MapHea
 
 app.Run();
 
-public record JobRequest(string Name);
-public record JobResult(Guid JobId, Guid WorkerId, bool Successful, string ErrorMessage);
+

@@ -2,6 +2,9 @@
 using Master.Domain.Services;
 using Master.Rest.DTOs;
 using Microsoft.AspNetCore.Http.HttpResults;
+using Shared.Domain.DTOs;
+using HttpResults = Microsoft.AspNetCore.Http.HttpResults;
+using IResult = Shared.Domain.DTOs.IResult;
 
 namespace Master.Rest.Apis;
 
@@ -16,28 +19,69 @@ public static class WorkersApi
         return app;
     }
 
-    private static async Task<Results<Ok, BadRequest<string>>> 
-        ScaleWorkers(HttpContext context, IWorkerService workerService, ScaleWorkersRequest scaleWorkersRequest) =>
-        HttpTypedResult.From<Ok, BadRequest<string>>(await workerService.ScaleAsync(scaleWorkersRequest.Count));
-
-    private static async Task<Results<Ok<List<Worker>>, NoContent>> 
+    private static async Task<Results<HttpResults.Ok<List<Worker>>, NoContent>> 
         AllWorkers(HttpContext context, IWorkerService workerService)
     {
         List<Worker> workers = await workerService.AllAsync();
-        if (!workers.Any())
+        if (workers.Any())
         {
             return TypedResults.NoContent();
         }
         return TypedResults.Ok(workers);
     }
     
-    private static async Task<Results<Ok<Worker>, BadRequest<string>, NotFound<string>>> 
-        RegisterAsync(HttpContext context, IWorkerService workerService, RegisterWorkerRequest registerWorkerRequest) =>
-        HttpTypedResult.From<Worker, Ok<Worker>, BadRequest<string>, NotFound<string>>(await workerService.RegisterAsync(registerWorkerRequest.Name));
+    // private static async Task<Results<HttpResults.Ok, HttpResults.NotFound, BadRequest<string>, InternalServerError<string>>> 
+    private static async Task<HttpResults.Ok> 
+        ScaleWorkers(HttpContext context, IWorkerService workerService, ScaleWorkersRequest scaleWorkersRequest)
+    {
+        IResult result = await workerService.ScaleAsync(scaleWorkersRequest.Count);
+        return TypedResults.Ok();
+    }
 
-    private static async Task<Results<Ok, BadRequest<string>>> 
-        HeartBeatAsync(HttpContext context, IWorkerService workerService, Guid workerId) =>
-        HttpTypedResult.From<Ok, BadRequest<string>>(await workerService.ReportHeartBeatAsync(workerId));
+
+    private static async Task<Results<HttpResults.Ok<Worker>, HttpResults.NotFound, BadRequest<string>, InternalServerError<string>>> 
+        RegisterAsync(HttpContext context, IWorkerService workerService, RegisterWorkerRequest registerWorkerRequest)
+    {
+        IResult<Worker> result = await workerService.RegisterAsync(registerWorkerRequest.Name);
+        if (result is CriticalError<Worker> criticalError)
+        {
+            return TypedResults.InternalServerError(criticalError.Message);
+        }
+
+        if (result is Error<Worker> error)
+        {
+            return TypedResults.BadRequest(error.Message);
+        }
+
+        if (result is Shared.Domain.DTOs.Ok<Worker> ok)
+        {
+            return TypedResults.Ok(ok.Value);
+        }
+        
+        return TypedResults.NotFound();
+    }
+
+    private static async Task<Results<HttpResults.Ok<Worker>, HttpResults.NotFound, BadRequest<string>, InternalServerError<string>>> 
+        HeartBeatAsync(HttpContext context, IWorkerService workerService, Guid workerId)
+    {
+        IResult result = await workerService.ReportHeartBeatAsync(workerId);
+        if (result is CriticalError<Worker> criticalError)
+        {
+            return TypedResults.InternalServerError(criticalError.Message);
+        }
+
+        if (result is Error<Worker> error)
+        {
+            return TypedResults.BadRequest(error.Message);
+        }
+
+        if (result is Shared.Domain.DTOs.Ok<Worker> ok)
+        {
+            return TypedResults.Ok(ok.Value);
+        }
+        
+        return TypedResults.NotFound();
+    }
 }
 
 public record RegisterWorkerRequest(string Name);

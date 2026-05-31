@@ -9,9 +9,9 @@ public class WorkerService(IWorkerRepository workerRepository, SchedulerState sc
 {
     public async Task<List<Worker>> AllAsync() => await workerRepository.AllAsync();
 
-    public async Task<Result2> ScaleAsync(int count)
+    public async Task<IResult> ScaleAsync(int count)
     {
-        return await Task.FromResult(Results.Ok());
+        return await Task.FromResult(new Ok());
         // Result error = null;
         // Faker faker = new();
         // int workerCount = await workerRepository.CountAsync();
@@ -44,7 +44,7 @@ public class WorkerService(IWorkerRepository workerRepository, SchedulerState sc
         // return null;
     }
 
-    public async Task<QueryResult2<Worker>> RegisterAsync(string name)
+    public async Task<IResult<Worker>> RegisterAsync(string name)
     {
         int count = await workerRepository.CountAsync();
         // if (schedulerState.DesiredNumberOfWorkers >= schedulerState.CurrentNumberOfWorkers)
@@ -54,49 +54,59 @@ public class WorkerService(IWorkerRepository workerRepository, SchedulerState sc
 
         if (count >= schedulerState.DesiredNumberOfWorkers)
         {
-            return QueryResults.DomainFailure<Worker>("We cannot register new workers now; wait.");
+            return new Error<Worker>("We cannot register new workers now; wait.");
         }
         
-        QueryResult2<Worker> workerQueryResult2 = await workerRepository.GetByNameAsync(name);
+        IResult result = await workerRepository.GetByNameAsync(name);
         Worker worker;
-        if (workerQueryResult2.Found)
+        if (result is Ok<Worker> ok)
         {
-            worker = workerQueryResult2.Data;
+             worker = ok.Value;
         }
         else
         {
             worker = new (name);
-            _ = await workerRepository.AddAsync(worker);
+            await workerRepository.AddAsync(worker);
         }
         
         worker.Register();
-        Exception? exception = await workerRepository.UnitOfWork.SaveEntitiesAsync();
-        if (exception is not null)
+        result = await workerRepository.UnitOfWork.SaveEntitiesAsync();
+
+        if (result is CriticalError criticalError)
         {
-            return QueryResults.ExceptionThrown<Worker>(exception);
+            return new CriticalError<Worker>(criticalError.Message);
         }
-        return QueryResults.Found(worker);
+
+        return new Ok<Worker>(worker);
     }
 
-    public Task<Result2> UnregisterAsync(Worker worker)
+    public Task<IResult> UnregisterAsync(Worker worker)
     {
         throw new NotImplementedException();
     }
 
-    public async Task<Result2> ReportHeartBeatAsync(Guid workerId)
+    public async Task<IResult> ReportHeartBeatAsync(Guid workerId)
     {
-        QueryResult2<Worker> workerQueryResult2 = await workerRepository.GetAsync(workerId);
-        if (workerQueryResult2.NotFound)
+        IResult result = await workerRepository.GetAsync(workerId);
+        if (result is NotFound<Worker> notFound)
         {
-            return workerQueryResult2;
+            return notFound;
         }
-        Worker worker = workerQueryResult2.Data;
+        
+        if (result is not Ok<Worker> ok)
+        {
+            return new UnknownError<Worker>("error occured while reporting heartbeat.");
+        }
+        
+        Worker worker = ok.Value;
         worker.ReportHeartBeat();
-        Exception? exception = await workerRepository.UnitOfWork.SaveEntitiesAsync();
-        if (exception is not null)
+        result = await workerRepository.UnitOfWork.SaveEntitiesAsync();
+
+        if (result is CriticalError criticalError)
         {
-            return QueryResults.ExceptionThrown<Worker>(exception);
+            return new CriticalError<Worker>(criticalError.Message);
         }
-        return QueryResults.Ok<Worker>();
+
+        return new Ok<Worker>(worker);
     }
 }

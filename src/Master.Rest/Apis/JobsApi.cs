@@ -1,9 +1,14 @@
 ﻿using Master.Domain.Aggregates;
 using Master.Domain.Services;
-using Master.Rest.DTOs;
-using Microsoft.AspNetCore.Http.HttpResults;
+using HttpResults = Microsoft.AspNetCore.Http.HttpResults;
+using Shared.Domain.DTOs;
+using IResult = Shared.Domain.DTOs.IResult;
 
 namespace Master.Rest.Apis;
+
+public record JobRequest(string Name);
+public record JobCompletionResult(Guid JobId, Guid WorkerId);
+public record JobFailureResult(Guid JobId, Guid WorkerId, string ErrorMessage);
 
 public static class JobsApi
 {
@@ -13,39 +18,76 @@ public static class JobsApi
         app.MapGet("/job", GetJob);
         app.MapPost("/job", CreateJob);
         app.MapPost("/job/start", StartJob);
-        app.MapPost("/job/result", SaveResult);
+        app.MapPost("/job/complete", CompleteJob);
+        app.MapPost("/job/fail", FailJob);
 
         return app;
     }
 
-    private static async Task<Results<Ok<Job>, NotFound<string>, BadRequest<string>>>
-        SaveResult(HttpContext context, IJobService jobService, JobResult res)
+    private static HttpResults.Results<HttpResults.Ok<Job>, HttpResults.NotFound<string>,
+            HttpResults.BadRequest<string>, HttpResults.InternalServerError<string>>
+        MapResultsToHttpTypedResults(IResult result)
     {
-        if (!res.Successful)
+        if (result is CriticalError<Job> criticalError)
         {
-            return HttpTypedResult.From<Job, Ok<Job>, NotFound<string>, BadRequest<string>>(
-                await jobService.FailJob(res.JobId, res.WorkerId));
+            return TypedResults.InternalServerError(criticalError.Message);
+        }
+        
+        if (result is Error<Job> error)
+        {
+            return TypedResults.BadRequest(error.Message);
+        }
+        
+        if (result is NotFound<Job> notFound)
+        {
+            return TypedResults.NotFound(notFound.Message);
         }
 
-        return HttpTypedResult.From<Job, Ok<Job>, NotFound<string>, BadRequest<string>>(
-            await jobService.CompleteJob(res.JobId, res.WorkerId));
+        if (result is Ok<Job> ok)
+        {
+            return TypedResults.Ok(ok.Value);
+        }
+        return TypedResults.InternalServerError("unknown error");
     }
 
-    private static async Task<Results<Ok<Job>, BadRequest<string>, NotFound<string>>>
-        GetJob(HttpContext context, IJobService jobService, Guid workerId) =>
-        HttpTypedResult.From<Job, Ok<Job>, BadRequest<string>, NotFound<string>>(
-            await jobService.AssignJob(workerId));
+    
+    private static async Task<HttpResults.Results<HttpResults.Ok<Job>, HttpResults.NotFound<string>, HttpResults.BadRequest<string>, HttpResults.InternalServerError<string>>>
+        CompleteJob(HttpContext context, IJobService jobService, JobCompletionResult res)
+    {
+        IResult result = await jobService.CompleteJobAsync(res.JobId, res.WorkerId);
+        return MapResultsToHttpTypedResults(result);
+    }
+    
+    private static async Task<HttpResults.Results<HttpResults.Ok<Job>, HttpResults.NotFound<string>, HttpResults.BadRequest<string>, HttpResults.InternalServerError<string>>>
+        FailJob(HttpContext context, IJobService jobService, JobFailureResult res)
+    {
+        
+        IResult result = await jobService.FailJobAsync(res.JobId, res.WorkerId);
+        return MapResultsToHttpTypedResults(result);
+    }
 
-    private static async Task<Results<Ok<Job>, BadRequest<string>>>
-        CreateJob(HttpContext context, JobRequest req, IJobService jobService) =>
-        HttpTypedResult.From<Job, Ok<Job>, BadRequest<string>>(await jobService.QueueJob(req.Name));
+    private static async Task<HttpResults.Results<HttpResults.Ok<Job>, HttpResults.NotFound<string>, HttpResults.BadRequest<string>, HttpResults.InternalServerError<string>>>
+        GetJob(HttpContext context, IJobService jobService, Guid workerId)
+    {
+        IResult result = await jobService.AssignJobAsync(workerId);
+        return MapResultsToHttpTypedResults(result);
+    }
 
-    private static async Task<Results<Ok<Job>, BadRequest<string>, NotFound<string>>>
-        StartJob(HttpContext context, IJobService jobService, Guid jobId, Guid workerId) =>
-        HttpTypedResult.From<Job, Ok<Job>, BadRequest<string>, NotFound<string>>(
-            await jobService.StartJob(jobId, workerId));
+    private static async Task<HttpResults.Results<HttpResults.Ok<Job>, HttpResults.NotFound<string>, HttpResults.BadRequest<string>, HttpResults.InternalServerError<string>>>
+        CreateJob(HttpContext context, JobRequest req, IJobService jobService)
+    {
+        IResult result = await jobService.QueueJobAsync(req.Name);
+        return MapResultsToHttpTypedResults(result);
+    }
 
-    private static async Task<Results<Ok<List<Job>>, NoContent>> GetJobList(HttpContext context, IJobService jobService)
+    private static async Task<HttpResults.Results<HttpResults.Ok<Job>, HttpResults.NotFound<string>, HttpResults.BadRequest<string>, HttpResults.InternalServerError<string>>>
+        StartJob(HttpContext context, IJobService jobService, Guid jobId, Guid workerId)
+    {
+        IResult result = await jobService.StartJobAsync(jobId, workerId);
+        return MapResultsToHttpTypedResults(result);
+    }
+
+    private static async Task<HttpResults.Results<HttpResults.Ok<List<Job>>, HttpResults.NoContent>> GetJobList(HttpContext context, IJobService jobService)
     {
         List<Job> jobs = await jobService.AllAsync();
         if (!jobs.Any())

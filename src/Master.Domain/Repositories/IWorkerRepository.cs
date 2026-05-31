@@ -9,11 +9,11 @@ public interface IWorkerRepository : IRepository
     public Task<List<Worker>> AllAsync();
     public Task<int> CountAsync();
     
-    public Task<Result2> AddAsync(Worker worker);
-    public Task<Result2> RemoveAsync(Worker worker);
+    public Task AddAsync(Worker worker);
+    public Task RemoveAsync(Worker worker);
     
-    public Task<QueryResult2<Worker>> GetAsync(Guid workerId);
-    public Task<QueryResult2<Worker>> GetByNameAsync(string name);
-    public Task<QueryResult2<Worker>> GetDeadWorkerByNameAsync(string name);
-    public Task<QueryResult2<Worker>> FirstAsync();
+    public Task<IResult<Worker>> GetAsync(Guid workerId);
+    public Task<IResult<Worker>> GetByNameAsync(string name);
+    public Task<IResult<Worker>> GetDeadWorkerByNameAsync(string name);
+    public Task<IResult<Worker>> FirstAsync();
 }
