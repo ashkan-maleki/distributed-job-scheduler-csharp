@@ -1,7 +1,5 @@
 ﻿using Master.Domain.Models;
 using Master.Domain.Services;
-using Master.Rest.DTOs;
-using Microsoft.AspNetCore.Http.HttpResults;
 using Shared.Domain.DTOs;
 using HttpResults = Microsoft.AspNetCore.Http.HttpResults;
 using IResult = Shared.Domain.DTOs.IResult;
@@ -19,7 +17,7 @@ public static class WorkersApi
         return app;
     }
 
-    private static async Task<Results<HttpResults.Ok<List<Worker>>, NoContent>> 
+    private static async Task<HttpResults.Results<HttpResults.Ok<List<Worker>>, HttpResults.NoContent>> 
         AllWorkers(HttpContext context, IWorkerService workerService)
     {
         List<Worker> workers = await workerService.AllAsync();
@@ -38,49 +36,38 @@ public static class WorkersApi
         return TypedResults.Ok();
     }
 
-
-    private static async Task<Results<HttpResults.Ok<Worker>, HttpResults.NotFound, BadRequest<string>, InternalServerError<string>>> 
+    private static HttpResults.Results<HttpResults.Ok<Worker>, HttpResults.NotFound<string>,
+            HttpResults.BadRequest<string>, HttpResults.InternalServerError<string>>
+        MapResultsToHttpTypedResults(IResult result)
+    {
+        switch (result)
+        {
+            case CriticalError criticalError:
+                return TypedResults.InternalServerError(criticalError.Message);
+            case DomainFailure domainFailure:
+                return TypedResults.BadRequest(domainFailure.Message);
+            case NotFound notFound:
+                return TypedResults.NotFound(notFound.Message);
+            case Object<Worker> objectJob:
+                return TypedResults.Ok(objectJob.Value);
+            default:
+                return TypedResults.InternalServerError("unknown error");
+        }
+    }
+    private static async Task<HttpResults.Results<HttpResults.Ok<Worker>, HttpResults.NotFound<string>,
+            HttpResults.BadRequest<string>, HttpResults.InternalServerError<string>>> 
         RegisterAsync(HttpContext context, IWorkerService workerService, RegisterWorkerRequest registerWorkerRequest)
     {
-        IResult<Worker> result = await workerService.RegisterAsync(registerWorkerRequest.Name);
-        if (result is CriticalError<Worker> criticalError)
-        {
-            return TypedResults.InternalServerError(criticalError.Message);
-        }
-
-        if (result is Error<Worker> error)
-        {
-            return TypedResults.BadRequest(error.Message);
-        }
-
-        if (result is Shared.Domain.DTOs.Ok<Worker> ok)
-        {
-            return TypedResults.Ok(ok.Value);
-        }
-        
-        return TypedResults.NotFound();
+        IResult result = await workerService.RegisterAsync(registerWorkerRequest.Name);
+        return MapResultsToHttpTypedResults(result);
     }
 
-    private static async Task<Results<HttpResults.Ok<Worker>, HttpResults.NotFound, BadRequest<string>, InternalServerError<string>>> 
+    private static async Task<HttpResults.Results<HttpResults.Ok<Worker>, HttpResults.NotFound<string>,
+            HttpResults.BadRequest<string>, HttpResults.InternalServerError<string>>> 
         HeartBeatAsync(HttpContext context, IWorkerService workerService, Guid workerId)
     {
         IResult result = await workerService.ReportHeartBeatAsync(workerId);
-        if (result is CriticalError<Worker> criticalError)
-        {
-            return TypedResults.InternalServerError(criticalError.Message);
-        }
-
-        if (result is Error<Worker> error)
-        {
-            return TypedResults.BadRequest(error.Message);
-        }
-
-        if (result is Shared.Domain.DTOs.Ok<Worker> ok)
-        {
-            return TypedResults.Ok(ok.Value);
-        }
-        
-        return TypedResults.NotFound();
+        return MapResultsToHttpTypedResults(result);
     }
 }
 

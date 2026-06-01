@@ -44,7 +44,7 @@ public class WorkerService(IWorkerRepository workerRepository, SchedulerState sc
         // return null;
     }
 
-    public async Task<IResult<Worker>> RegisterAsync(string name)
+    public async Task<Result<Worker>> RegisterAsync(string name)
     {
         int count = await workerRepository.CountAsync();
         // if (schedulerState.DesiredNumberOfWorkers >= schedulerState.CurrentNumberOfWorkers)
@@ -54,14 +54,14 @@ public class WorkerService(IWorkerRepository workerRepository, SchedulerState sc
 
         if (count >= schedulerState.DesiredNumberOfWorkers)
         {
-            return new Error<Worker>("We cannot register new workers now; wait.");
+            return new Error("We cannot register new workers now; wait.");
         }
         
         IResult result = await workerRepository.GetByNameAsync(name);
         Worker worker;
-        if (result is Ok<Worker> ok)
+        if (result is Object<Worker> objectResult)
         {
-             worker = ok.Value;
+             worker = objectResult.Value;
         }
         else
         {
@@ -74,10 +74,10 @@ public class WorkerService(IWorkerRepository workerRepository, SchedulerState sc
 
         if (result is CriticalError criticalError)
         {
-            return new CriticalError<Worker>(criticalError.Message);
+            return new CriticalError(criticalError.Message);
         }
 
-        return new Ok<Worker>(worker);
+        return worker;
     }
 
     public Task<IResult> UnregisterAsync(Worker worker)
@@ -88,25 +88,21 @@ public class WorkerService(IWorkerRepository workerRepository, SchedulerState sc
     public async Task<IResult> ReportHeartBeatAsync(Guid workerId)
     {
         IResult result = await workerRepository.GetAsync(workerId);
-        if (result is NotFound<Worker> notFound)
+        if (result is NotFound notFound)
         {
             return notFound;
         }
         
-        if (result is not Ok<Worker> ok)
+        if (result.TryGetValue(out Worker? worker))
         {
-            return new UnknownError<Worker>("error occured while reporting heartbeat.");
-        }
-        
-        Worker worker = ok.Value;
-        worker.ReportHeartBeat();
-        result = await workerRepository.UnitOfWork.SaveEntitiesAsync();
+            worker.ReportHeartBeat();
+            result = await workerRepository.UnitOfWork.SaveEntitiesAsync();
 
-        if (result is CriticalError criticalError)
-        {
-            return new CriticalError<Worker>(criticalError.Message);
+            if (result is CriticalError criticalError)
+            {
+                return new CriticalError(criticalError.Message);
+            }
         }
-
-        return new Ok<Worker>(worker);
+        return new Ok();
     }
 }

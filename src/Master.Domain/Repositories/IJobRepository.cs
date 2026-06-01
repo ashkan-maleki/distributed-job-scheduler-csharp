@@ -7,8 +7,8 @@ namespace Master.Domain.Repositories;
 public interface IJobRepository : IRepository
 {
     public Task<List<Job>> AllAsync();
-    public Task<IResult<Job>> GetAsync(Guid jobId);
-    public Task<IResult<Job>> GetQueuedJobAsync();
+    public Task<Result<Job>> GetAsync(Guid jobId);
+    public Task<Result<Job>> GetQueuedJobAsync();
     public Task AddAsync(Job job);
     
     // public Task<IError?> Update(Job newJob, Job oldJob);

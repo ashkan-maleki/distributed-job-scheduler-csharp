@@ -28,28 +28,20 @@ public static class JobsApi
             HttpResults.BadRequest<string>, HttpResults.InternalServerError<string>>
         MapResultsToHttpTypedResults(IResult result)
     {
-        if (result is CriticalError<Job> criticalError)
+        switch (result)
         {
-            return TypedResults.InternalServerError(criticalError.Message);
+            case CriticalError criticalError:
+                return TypedResults.InternalServerError(criticalError.Message);
+            case DomainFailure domainFailure:
+                return TypedResults.BadRequest(domainFailure.Message);
+            case NotFound notFound:
+                return TypedResults.NotFound(notFound.Message);
+            case Object<Job> objectJob:
+                return TypedResults.Ok(objectJob.Value);
+            default:
+                return TypedResults.InternalServerError("unknown error");
         }
-        
-        if (result is Error<Job> error)
-        {
-            return TypedResults.BadRequest(error.Message);
-        }
-        
-        if (result is NotFound<Job> notFound)
-        {
-            return TypedResults.NotFound(notFound.Message);
-        }
-
-        if (result is Ok<Job> ok)
-        {
-            return TypedResults.Ok(ok.Value);
-        }
-        return TypedResults.InternalServerError("unknown error");
     }
-
     
     private static async Task<HttpResults.Results<HttpResults.Ok<Job>, HttpResults.NotFound<string>, HttpResults.BadRequest<string>, HttpResults.InternalServerError<string>>>
         CompleteJob(HttpContext context, IJobService jobService, JobCompletionResult res)

@@ -34,25 +34,25 @@ public class JobRepository() : IJobRepository
 
     public async Task<List<Job>> AllAsync() => await _context.Jobs.ToListAsync();
     
-    public async Task<IResult<Job>> GetAsync(Guid jobId)
+    public async Task<Result<Job>> GetAsync(Guid jobId)
     {
         Job? job = await _context.Jobs.Where(j => j.Id == jobId).FirstOrDefaultAsync();
         if (job is null)
         {
-            return new NotFound<Job>($"There are no job in queue with id as {jobId}");
+            return new NotFound($"There are no job in queue with id as {jobId}");
         }
 
-        return new Ok<Job>(job);
+        return job;
     }
     
-    public async Task<IResult<Job>> GetQueuedJobAsync()
+    public async Task<Result<Job>> GetQueuedJobAsync()
     {
         Job? job = await _context.Jobs.Where(j => j.State == JobState.Queued).FirstOrDefaultAsync();
         if (job is null)
         {
-            return new NotFound<Job>("There are no job in queue");
+            return new NotFound("There are no job in queue");
         }
-        return new Ok<Job>(job);
+        return job;
     }
 
     public async Task AddAsync(Job job) => _ = await _context.Jobs.AddAsync(job);

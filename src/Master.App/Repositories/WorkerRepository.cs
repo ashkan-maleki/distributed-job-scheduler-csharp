@@ -27,32 +27,32 @@ public class WorkerRepository(SchedulerDbContext context) : IWorkerRepository
         await Task.CompletedTask;
     }
 
-    private static IResult<Worker> CheckIfWorkerIsNull(Worker? worker, string notFoundError)
+    private static Result<Worker> CheckIfWorkerIsNull(Worker? worker, string notFoundError)
     {
         if (worker is null)
         {
-            return new NotFound<Worker>(notFoundError);
+            return new NotFound(notFoundError);
         }
 
-        return new Ok<Worker>(worker);
+        return worker;
     }
 
-    public async Task<IResult<Worker>> GetAsync(Guid workerId) => CheckIfWorkerIsNull(
+    public async Task<Result<Worker>> GetAsync(Guid workerId) => CheckIfWorkerIsNull(
         await context.Workers.Where(w => w.Id == workerId).FirstOrDefaultAsync(),
         $"There is no worker with id ({workerId}) in the list");
 
-    public async Task<IResult<Worker>> GetByNameAsync(string name) =>
+    public async Task<Result<Worker>> GetByNameAsync(string name) =>
         CheckIfWorkerIsNull(await context.Workers.Where(w => w.Name == name).FirstOrDefaultAsync(),
             $"There is no worker with name ({name}) in the list");
 
-    public async Task<IResult<Worker>> GetDeadWorkerByNameAsync(string name) =>
+    public async Task<Result<Worker>> GetDeadWorkerByNameAsync(string name) =>
         CheckIfWorkerIsNull(await context.Workers
                 .Where(w => w.CurrentState == WorkerState.Dead && w.Name == name)
                 .FirstOrDefaultAsync(),
             $"There is no worker with name ({name}) in the list");
 
 
-    public async Task<IResult<Worker>> FirstAsync() =>
+    public async Task<Result<Worker>> FirstAsync() =>
         CheckIfWorkerIsNull(await context.Workers.FirstOrDefaultAsync(),
             $"There is no worker in the list");
 }
