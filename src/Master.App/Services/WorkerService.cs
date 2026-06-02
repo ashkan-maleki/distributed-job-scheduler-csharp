@@ -87,16 +87,16 @@ public class WorkerService(IWorkerRepository workerRepository, SchedulerState sc
 
     public async Task<IResult> ReportHeartBeatAsync(Guid workerId)
     {
-        IResult result = await workerRepository.GetAsync(workerId);
-        if (result is NotFound notFound)
+        Result<Worker> workerResult = await workerRepository.GetAsync(workerId);
+        if (workerResult.NotFound)
         {
-            return notFound;
+            return workerResult.NotFoundResult;
         }
         
-        if (result.TryGetValue(out Worker? worker))
+        if (workerResult.TryGetValue(out Worker? worker))
         {
             worker.ReportHeartBeat();
-            result = await workerRepository.UnitOfWork.SaveEntitiesAsync();
+            IResult result = await workerRepository.UnitOfWork.SaveEntitiesAsync();
 
             if (result is CriticalError criticalError)
             {

@@ -7,14 +7,14 @@ namespace Shared.Domain.DTOs;
 public interface IResult
 {
     bool Success { get; }   
-    bool Failure { get; }
+    bool Failed { get; }
 }
 
 
 public abstract class Result(bool success) : IResult
 {
-    public virtual bool Success { get; } = success;
-    public virtual bool Failure => !Success;
+    public virtual bool Success => success;
+    public virtual bool Failed => !Success;
 }
 public class Ok() : Result(true);
 
@@ -55,12 +55,18 @@ public abstract class Object<T>(bool success, T value) : Result(success), IResul
     public static implicit operator T(Object<T> result) => result.Value;
 }
 
-class Ok<T>(T value) : Object<T>(true, value);
-
+public class Ok<T> : Object<T>
+{
+    internal Ok(T value) : base(true, value)
+    {
+    }
+}
 
 public class Result<T> : Result
 {
     private readonly IResult _result;
+    public IResult WrappedResult => _result;
+    
     private Result(IResult result) : base(result.Success) => _result = result;
     
 
@@ -87,20 +93,30 @@ public class Result<T> : Result
         }
         return default!;
     }
-}
-
-public static class ResultExtensions
-{
-    public static bool TryGetValue<T>(this IResult result,[NotNullWhen(true)] out T? value)
+    
+    public bool TryGetValue([NotNullWhen(true)] out T? value)
     {
         value = default;
-        if (result is Object<T> @object)
+        if (_result is Object<T> @object)
         {
             value = @object.Value;
         }
-        return result is Object<T>;
+        return _result is Object<T>;
     }
+    
+    [MemberNotNullWhen(false, nameof(NotFoundResult))]
+    [MemberNotNullWhen(true, nameof(OkResult))]
+    
+    public bool Ok => _result is Ok<T>;
+    [MemberNotNullWhen(true, nameof(NotFoundResult))]
+    [MemberNotNullWhen(false, nameof(OkResult))]
+    public bool NotFound => _result is NotFound;
+    
+    public NotFound? NotFoundResult => _result as NotFound;
+    public Ok<T>? OkResult => _result as Ok<T>;
 }
+
+
 
 
 

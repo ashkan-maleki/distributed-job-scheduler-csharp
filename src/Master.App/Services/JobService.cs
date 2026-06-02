@@ -31,20 +31,20 @@ public class JobService(IJobRepository jobRepository, IWorkerRepository workerRe
         Func<Job, Guid, IResult> jobStateTransition
     )
     {
-        IResult result = await workerRepository.GetAsync(workerId);
-        if (result is NotFound workerNotFound)
+        Result<Worker> workerResult = await workerRepository.GetAsync(workerId);
+        if (workerResult.NotFound)
         {
-            return workerNotFound;
+            return workerResult.NotFoundResult;
         }
 
-        result = await loadJob();
-        if (result is not Object<Job> jobObject)
+        Result<Job> jobResult = await loadJob();
+        if (jobResult.NotFound)
         {
-            return (NotFound)result;
+            return jobResult.NotFoundResult;
         }
         
-        Job job = jobObject.Value;
-        result = jobStateTransition(job, workerId);
+        Job job = jobResult.OkResult.Value;
+        IResult result = jobStateTransition(job, workerId);
         if (result is DomainFailure error)
         {
             return error;
