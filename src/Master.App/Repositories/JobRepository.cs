@@ -36,7 +36,7 @@ public class JobRepository() : IJobRepository
     
     public async Task<Result<Job>> GetAsync(Guid jobId)
     {
-        Job? job = await _context.Jobs.Where(j => j.Id == jobId).FirstOrDefaultAsync();
+        Job? job = await _context.Jobs.FindAsync(jobId);
         if (job is null)
         {
             return new NotFound($"There are no job in queue with id as {jobId}");
@@ -62,6 +62,4 @@ public class JobRepository() : IJobRepository
     //     _ = _context.Jobs.Update(newJob);
     //     return null;
     // }
-
-
 }

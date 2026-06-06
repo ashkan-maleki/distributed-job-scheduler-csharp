@@ -64,22 +64,22 @@ public class JobService(IJobRepository jobRepository, IWorkerRepository workerRe
     public async Task<Result<Job>> AssignJobAsync(Guid workerId) =>
         await ExecuteJobCommand(workerId,
             async () => await jobRepository.GetQueuedJobAsync(),
-            (job, id) => job.Assign(workerId));
+            (job, _) => job.Assign(workerId));
 
     public async Task<Result<Job>> StartJobAsync(Guid jobId, Guid workerId) =>
         await ExecuteJobCommand(workerId,
-            async () => await jobRepository.GetQueuedJobAsync(),
-            (job, id) => job.Start(workerId));
+            async () => await jobRepository.GetAsync(jobId),
+            (job, _) => job.Start(workerId));
 
     public async Task<Result<Job>> CompleteJobAsync(Guid jobId, Guid workerId) =>
         await ExecuteJobCommand(workerId,
-            async () => await jobRepository.GetQueuedJobAsync(),
-            (job, id) => job.Complete(workerId));
+            async () => await jobRepository.GetAsync(jobId),
+            (job, _) => job.Complete(workerId));
 
     public async Task<Result<Job>> FailJobAsync(Guid jobId, Guid workerId) =>
         await ExecuteJobCommand(workerId,
-            async () => await jobRepository.GetQueuedJobAsync(),
-            (job, id) => job.Fail(workerId));
+            async () => await jobRepository.GetAsync(jobId),
+            (job, _) => job.Fail(workerId));
 }
 
 // private async Task<IResult<Job>> ExecuteJobCommand(

@@ -10,7 +10,7 @@ HttpClient client = new()
     BaseAddress = new Uri("http://localhost:5031")
 };
 
-Guid workerId = Guid.NewGuid();
+Guid workerId = Guid.Parse("18D55FCF-DA64-46DE-B7E8-563B5A8B8685");
 bool start = true;
 
 while (start)
@@ -22,7 +22,15 @@ while (start)
     HttpResponseMessage httpResponseMessage = await client.GetAsync($"/api/job?workerId={workerId}");
     if (httpResponseMessage.StatusCode == System.Net.HttpStatusCode.NotFound)
     {
-        Console.WriteLine("Job not found.");
+        string error = await httpResponseMessage.Content.ReadAsStringAsync();
+        Console.WriteLine($"Job not found: {error}.");
+        return;
+    }
+
+    if (httpResponseMessage.StatusCode == System.Net.HttpStatusCode.BadRequest)
+    {
+        string error = await httpResponseMessage.Content.ReadAsStringAsync();
+        Console.WriteLine($"Job assigment failed because: {error}.");
         return;
     }
 
@@ -47,9 +55,9 @@ while (start)
     Console.WriteLine("I'm a happy worker cause I completed a job and I want to report it to my master.");
     Console.WriteLine("Reporting a completed job ...");
 
-    JobResultRequest resultReq = new(runningJob!.Id, workerId, true, null);
+    JobFailureResult resultReq = new(runningJob!.Id, workerId, "I don't want to finish this job");
 
-    HttpResponseMessage resultResponse = await client.PostAsJsonAsync("/api/job/result", resultReq);
+    HttpResponseMessage resultResponse = await client.PostAsJsonAsync("/api/job/fail", resultReq);
 
     // resultResponse.EnsureSuccessStatusCode();
     string json =  await resultResponse.Content.ReadAsStringAsync();
@@ -73,7 +81,7 @@ while (start)
 }
 
 
-public record JobResultRequest(Guid JobId, Guid WorkerId, bool Result, string? ErrorMessage);
+public record JobFailureResult(Guid JobId, Guid WorkerId, string ErrorMessage);
 
 
 // using System.Diagnostics;

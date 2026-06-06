@@ -18,34 +18,68 @@ public class Job()
     {
         Name = name;
     }
+    
+    public IResult Assign(Guid workerId)
+    {
+        if (WorkerId is not null)
+        {
+            return new DomainFailure(
+                $"Job is already assigned to another worker, {WorkerId}, requesting worker {workerId}.");
+        }
 
+        if (State != JobState.Queued)
+        {
+            return new DomainFailure(
+                $"Job is in wrong state, current state: {State}, expected current state: {JobState.Queued}.");
+        }
+
+        WorkerId = workerId;
+        State = JobState.Assigned;
+        Version++;
+        return new Ok();
+    }
+    
     private IResult ChangeState(JobState oldState, JobState newState, Guid workerId)
     {
-        if (WorkerId is not null && WorkerId != workerId)
+        if (WorkerId is null)
         {
-            return new Error(
+            return new DomainFailure($"Job ({Id}) hasn't assigned to a worker");
+        }
+        
+        if (WorkerId != workerId)
+        {
+            return new DomainFailure(
                 $"Job is already assigned to another worker, {WorkerId}, requesting worker {workerId}.");
         }
 
         if (State != oldState)
         {
-            return new Error(
+            return new DomainFailure(
                 $"Job is in wrong state, current state: {State}, expected current state: {oldState}.");
         }
-
-        WorkerId ??= workerId;
+        
         State = newState;
         Version++;
         return new Ok();
     }
 
-    public IResult Assign(Guid workerId) => ChangeState(JobState.Queued, JobState.Assigned, workerId);
-
     public IResult Start(Guid workerId) => ChangeState(JobState.Assigned, JobState.Running, workerId);
 
-    public IResult Complete(Guid workerId) => ChangeState(JobState.Running, JobState.Completed, workerId);
+    private IResult CompleteJob(JobState oldState, JobState newState, Guid workerId)
+    {
+        IResult result = ChangeState(oldState, newState, workerId);
+        if (result is DomainFailure domainFailure)
+        {
+            return domainFailure;
+        }
 
-    public IResult Fail(Guid workerId) => ChangeState(JobState.Running, JobState.Failed, workerId);
+        WorkerId = null;
+        return new Ok();
+    }
+
+    public IResult Complete(Guid workerId) => CompleteJob(JobState.Running, JobState.Completed, workerId);
+
+    public IResult Fail(Guid workerId) => CompleteJob(JobState.Running, JobState.Failed, workerId);
 }
 
 class JobDeprecated()
