@@ -6,10 +6,7 @@ public class ApiConfigSetup(IConfiguration configuration) : IConfigureOptions<Ap
 {
     private const string SectionName = "Rpc";
 
-    public void Configure(ApiConfig options) =>
-        configuration
-            .GetSection(SectionName)
-            .Bind(options);
+    public void Configure(ApiConfig options) => configuration.GetSection(SectionName).Bind(options);
 }
 
 public class ApiConfig
