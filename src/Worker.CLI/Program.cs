@@ -18,7 +18,15 @@ while (start)
     Console.WriteLine("I'm a worker and I want to get a job to work on it.");
     Console.WriteLine("Getting a job ...");
 
-    Job? assignedJob = await client.GetFromJsonAsync<Job>($"/api/job?workerId={workerId}");
+    
+    HttpResponseMessage httpResponseMessage = await client.GetAsync($"/api/job?workerId={workerId}");
+    if (httpResponseMessage.StatusCode == System.Net.HttpStatusCode.NotFound)
+    {
+        Console.WriteLine("Job not found.");
+        return;
+    }
+
+    Job? assignedJob = await httpResponseMessage.Content.ReadFromJsonAsync<Job>();
 
     Console.WriteLine(assignedJob);
 
