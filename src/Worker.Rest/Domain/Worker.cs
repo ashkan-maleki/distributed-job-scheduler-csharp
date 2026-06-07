@@ -30,6 +30,7 @@ public class Worker
     }
 
     public bool ShouldReportHeartBeat => HeartBeatReportedAt - DateTime.UtcNow > TimeSpan.FromSeconds(4);
+    public bool ShouldNotReportHeartBeat => !ShouldReportHeartBeat;
 
     public void StartJob(Guid jobId)
     {

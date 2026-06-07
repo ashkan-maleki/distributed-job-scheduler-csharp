@@ -1,6 +1,7 @@
 ﻿using Bogus;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
+using Shared.Domain.DTOs;
 using Worker.Rest.Contexts;
 using Worker.Rest.EF;
 using Worker.Rest.HttpServices.Master;
@@ -24,11 +25,14 @@ public class RegistrationBackgroundService(
                 continue;
             }
             
-            string name = faker.Company.CompanyName();
-            name = name.ToLower().Replace(" ", "-");
-            (bool registered, Domain.Worker? worker) = await httpClient.Register(name);
-            if (registered && worker is not null)
+            string name = faker.Company.CompanyName()
+                .ToLower()
+                .Replace(" ", "-");
+            
+            Result<Domain.Worker> result = await httpClient.Register(name);
+            if (result.WrappedResult is Ok<Domain.Worker> ok)
             {
+                Domain.Worker worker = ok.Value;
                 await using WorkerDbContext db = await factory.CreateDbContextAsync(stoppingToken);
                 worker.Register();
                 await db.Workers.AddAsync(worker, stoppingToken);
