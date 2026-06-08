@@ -56,9 +56,9 @@ public static class WorkersApi
     }
     private static async Task<HttpResults.Results<HttpResults.Ok<Worker>, HttpResults.NotFound<string>,
             HttpResults.BadRequest<string>, HttpResults.InternalServerError<string>>> 
-        RegisterAsync(HttpContext context, IWorkerService workerService, RegisterWorkerRequest registerWorkerRequest)
+        RegisterAsync(HttpContext context, IWorkerService workerService)
     {
-        IResult result = await workerService.RegisterAsync(registerWorkerRequest.Name);
+        IResult result = await workerService.RegisterAsync();
         return MapResultsToHttpTypedResults(result);
     }
 
