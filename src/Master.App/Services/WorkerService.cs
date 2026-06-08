@@ -1,77 +1,83 @@
-﻿using Master.Domain.Models;
+﻿using System.Net.Http.Headers;
+using Bogus;
+using Master.Domain.Models;
 using Master.Domain.Repositories;
 using Master.Domain.Services;
 using Shared.Domain.DTOs;
 
 namespace Master.App.Services;
 
-public class WorkerService(IWorkerRepository workerRepository, SchedulerState schedulerState) : IWorkerService
+public class WorkerService(IWorkerRepository workerRepository, IDesiredStateRepository desiredStateRepository) : IWorkerService
 {
     public async Task<List<Worker>> AllAsync() => await workerRepository.AllAsync();
 
-    public async Task<IResult> ScaleAsync(int count)
+    private async Task ScaleUpAsync(int count)
     {
-        return await Task.FromResult(new Ok());
-        // Result error = null;
-        // Faker faker = new();
-        // int workerCount = await workerRepository.CountAsync();
-        // for (int i = 0; i < count - workerCount; i++)
-        // {
-        //     error =  await workerRepository.AddAsync(new Worker(faker.Company.CompanyName()));
-        //     if (error != null)
-        //     {
-        //         return error;
-        //     }
-        // }
-        // while (workerCount > count)
-        // {
-        //     (error, Worker? worker) = await workerRepository.FirstAsync();
-        //     if (error != null)
-        //     {
-        //         return error;
-        //     }
-        //     error = await workerRepository.RemoveAsync(worker!);
-        //     if (error != null)
-        //     {
-        //         return error;
-        //     }
-        // }
-        // error = await workerRepository.UnitOfWork.SaveEntitiesAsync();
-        // if (error != null)
-        // {
-        //     return error;
-        // }
-        // return null;
+        Faker faker = new();
+        for (int i = await workerRepository.CountAsync(); i < count; i++)
+        {
+            string name = faker.Company.CompanyName()
+                .ToLower()
+                .Replace(" ", "-");
+            await workerRepository.AddAsync(new Worker(name));
+        }
+    }
+    
+    private async Task<IResult> ScaleDownAsync(int count)
+    {
+        for (int i = await workerRepository.CountAsync(); i > count; i--)
+        {
+            Result<Worker> result = await workerRepository.FirstAsync();
+            if (result.NotFound)
+            {
+                return result.NotFoundResult;
+            }
+            workerRepository.Remove(result.OkResult.Value);
+        }
+
+        return new Ok();
     }
 
-    public async Task<Result<Worker>> RegisterAsync(string name)
+    public async Task<IResult> ScaleAsync(int count)
     {
-        int count = await workerRepository.CountAsync();
-        // if (schedulerState.DesiredNumberOfWorkers >= schedulerState.CurrentNumberOfWorkers)
-        // {
-        //     return new(new WorkerServiceInternalError("Current number of workers is " + count), null);
-        // }
+        await ScaleUpAsync(count);
+        IResult result = await ScaleDownAsync(count);
+        if (result is NotFound notFound)
+        {
+            return notFound;
+        }
+        return await workerRepository.UnitOfWork.SaveEntitiesAsync();
+    }
 
-        if (count >= schedulerState.DesiredNumberOfWorkers)
+    public async Task<Result<Worker>> RegisterAsync()
+    {
+        int currentNumberOfWorkers = await workerRepository.CountAsync();
+        Result<DesiredState> schedulerStateResult = await desiredStateRepository.GetAsync();
+        if (schedulerStateResult.NotFound)
         {
-            return new Error("We cannot register new workers now; wait.");
+            return schedulerStateResult.NotFoundResult;
         }
-        
-        IResult result = await workerRepository.GetByNameAsync(name);
-        Worker worker;
-        if (result is Object<Worker> objectResult)
+
+        int desiredNumberOfWorkers = schedulerStateResult.OkResult.Value.DesiredNumberOfWorkers;
+        if (currentNumberOfWorkers >= desiredNumberOfWorkers)
         {
-             worker = objectResult.Value;
+            return new DomainFailure("We cannot register new workers now; wait.");
         }
-        else
+
+        Faker newFaker = new Faker();
+        string name = newFaker.Company.CompanyName()
+            .ToLower()
+            .Replace(" ", "-");
+        Result<Worker> workerResult = await workerRepository.GetUnregisteredAsync();
+        if (workerResult.NotFound)
         {
-            worker = new (name);
-            await workerRepository.AddAsync(worker);
+            return workerResult.NotFoundResult;
         }
-        
+
+        Worker worker = workerResult.OkResult.Value;
         worker.Register();
-        result = await workerRepository.UnitOfWork.SaveEntitiesAsync();
 
+        IResult result = await workerRepository.UnitOfWork.SaveEntitiesAsync();
         if (result is CriticalError criticalError)
         {
             return new CriticalError(criticalError.Message);
@@ -92,7 +98,7 @@ public class WorkerService(IWorkerRepository workerRepository, SchedulerState sc
         {
             return workerResult.NotFoundResult;
         }
-        
+
         if (workerResult.TryGetValue(out Worker? worker))
         {
             worker.ReportHeartBeat();
@@ -103,6 +109,7 @@ public class WorkerService(IWorkerRepository workerRepository, SchedulerState sc
                 return new CriticalError(criticalError.Message);
             }
         }
+
         return new Ok();
     }
 }
