@@ -79,7 +79,7 @@ public class JobBackgroundService(
 
             await SimpleWork.Run(stoppingToken);
             
-            JobResultRequest request = new(worker.Id, job.Id, true, null);
+            JobCompletionRequest request = new(worker.Id, job.Id);
             (error, job) = await jobHttpClient.ResultJobAsync(request, stoppingToken);
 
             if (error != null)

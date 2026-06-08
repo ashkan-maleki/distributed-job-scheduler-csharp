@@ -10,10 +10,10 @@ public interface IJobHttpClient
 {
     public Task<(IContentMessage?, Job?)> GetJobAsync(Guid workerId, CancellationToken stoppingToken);
     public Task<(IContentMessage?, Job?)> StartJobAsync(Guid workerId, Guid jobId, CancellationToken stoppingToken);
-    public Task<(IContentMessage?, Job?)> ResultJobAsync(JobResultRequest request, CancellationToken stoppingToken);
+    public Task<(IContentMessage?, Job?)> ResultJobAsync(JobCompletionRequest request, CancellationToken stoppingToken);
 }
 
-public record JobResultRequest(Guid JobId, Guid WorkerId, bool Successful, string? ErrorMessage);
+public record JobCompletionRequest(Guid JobId, Guid WorkerId);
 
 public class PollingFailureErrorContent(string content) : ErrorContentMessage(content);
 public class StartingJobErrorContent(string content) : ErrorContentMessage(content);
@@ -54,7 +54,7 @@ public class JobHttpClient(HttpClient client, IOptions<ApiConfig> options) : IJo
         return (null, job);
     }
 
-    public async Task<(IContentMessage?, Job?)> ResultJobAsync(JobResultRequest request, CancellationToken stoppingToken)
+    public async Task<(IContentMessage?, Job?)> ResultJobAsync(JobCompletionRequest request, CancellationToken stoppingToken)
     {
         string requestUrl = $"{JobApis.Result}";
         HttpResponseMessage response = await client.PostAsJsonAsync(requestUrl, request, stoppingToken);
