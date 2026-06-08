@@ -7,7 +7,8 @@ public class Worker
     public DateTime RegisteredAt { get; private set; }
     public DateTime HeartBeatReportedAt { get; private set; }
     public DateTime JobCompletedAt { get; private set; }
-    public Guid? JobId { get; set; }
+    public DateTime JobAssignedAt { get; private set; }
+    public Guid JobId { get; private set; } = Guid.Empty;
 
     public void Register()
     {
@@ -27,10 +28,13 @@ public class Worker
     public void AssignJob(Guid jobId)
     {
         JobId = jobId;
+        JobAssignedAt = DateTime.UtcNow;
     }
 
     public bool ShouldReportHeartBeat => HeartBeatReportedAt - DateTime.UtcNow > TimeSpan.FromSeconds(4);
     public bool ShouldNotReportHeartBeat => !ShouldReportHeartBeat;
+    public bool IsJobAssigned => JobId != Guid.Empty;
+    public bool ReadyToProcessJob => IsJobAssigned;
 
     public void StartJob(Guid jobId)
     {
