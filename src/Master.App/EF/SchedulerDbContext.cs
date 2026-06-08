@@ -7,23 +7,24 @@ using Shared.Domain.EF;
 
 namespace Master.App.EF;
 
-public class SchedulerDbContext(ILogger<SchedulerDbContext> logger, DbContextOptions<SchedulerDbContext> options) 
+public class SchedulerDbContext(ILogger<SchedulerDbContext> logger, DbContextOptions<SchedulerDbContext> options)
     : DbContext(options), IUnitOfWork
 {
     public DbSet<Job> Jobs { get; set; }
     public DbSet<Worker> Workers { get; set; }
-    
+    public DbSet<SchedulerState> SchedulerStates { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Job>()
             .HasOne<Worker>()
             .WithMany()
             .HasForeignKey(j => j.WorkerId);
-        
+
         modelBuilder.Entity<Job>()
             .Property(j => j.Version)
             .IsConcurrencyToken();
-        
+
         modelBuilder.Entity<Worker>()
             .Property(w => w.Name)
             .IsRequired()
@@ -49,9 +50,10 @@ public class SchedulerDbContext(ILogger<SchedulerDbContext> logger, DbContextOpt
         catch (DbUpdateException e)
         {
             logger.LogCritical(e, "Exception");
-            return new CriticalError("an error is encountered while saving to the database.");;
+            return new CriticalError("an error is encountered while saving to the database.");
+            ;
         }
-        
+
         return new Ok();
     }
 }
