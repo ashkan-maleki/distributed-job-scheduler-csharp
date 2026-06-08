@@ -10,9 +10,10 @@ public interface IWorkerRepository : IRepository
     public Task<int> CountAsync();
     
     public Task AddAsync(Worker worker);
-    public Task RemoveAsync(Worker worker);
+    public void Remove(Worker worker);
     
     public Task<Result<Worker>> GetAsync(Guid workerId);
+    public Task<Result<Worker>> GetUnregisteredAsync();
     public Task<Result<Worker>> GetByNameAsync(string name);
     public Task<Result<Worker>> GetDeadWorkerByNameAsync(string name);
     public Task<Result<Worker>> FirstAsync();

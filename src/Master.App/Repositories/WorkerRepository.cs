@@ -16,16 +16,9 @@ public class WorkerRepository(SchedulerDbContext context) : IWorkerRepository
 
     public async Task<int> CountAsync() => await context.Workers.CountAsync();
 
-    public async Task AddAsync(Worker worker)
-    {
-        _ = await context.Workers.AddAsync(worker);
-    }
+    public async Task AddAsync(Worker worker) => _ = await context.Workers.AddAsync(worker);
 
-    public async Task RemoveAsync(Worker worker)
-    {
-        _ = context.Workers.Remove(worker);
-        await Task.CompletedTask;
-    }
+    public void Remove(Worker worker) => _ = context.Workers.Remove(worker);
 
     private static Result<Worker> CheckIfWorkerIsNull(Worker? worker, string notFoundError)
     {
@@ -40,6 +33,10 @@ public class WorkerRepository(SchedulerDbContext context) : IWorkerRepository
     public async Task<Result<Worker>> GetAsync(Guid workerId) => CheckIfWorkerIsNull(
         await context.Workers.Where(w => w.Id == workerId).FirstOrDefaultAsync(),
         $"There is no worker with id ({workerId}) in the list");
+
+    public async Task<Result<Worker>> GetUnregisteredAsync() => CheckIfWorkerIsNull(
+        await context.Workers.Where(w => w.RegisteredAt == DateTime.MinValue).FirstOrDefaultAsync(),
+        "There is no unregistered worker");
 
     public async Task<Result<Worker>> GetByNameAsync(string name) =>
         CheckIfWorkerIsNull(await context.Workers.Where(w => w.Name == name).FirstOrDefaultAsync(),
