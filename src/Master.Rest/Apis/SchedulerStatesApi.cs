@@ -1,6 +1,10 @@
 ﻿using Master.Domain.Models;
 using Master.Domain.Repositories;
+using Master.Domain.Services;
 using Microsoft.AspNetCore.Http.HttpResults;
+using Shared.Domain.DTOs;
+using IResult = Shared.Domain.DTOs.IResult;
+using Ok = Microsoft.AspNetCore.Http.HttpResults.Ok;
 
 namespace Master.Rest.Apis;
 
@@ -15,17 +19,21 @@ public static class SchedulerStatesApi
 
     public record SchedulerStateResponse(int CurrentNumberOfWorkers, int DesiredNumberOfWorkers);
 
-    private static async Task<Ok<SchedulerStateResponse>> WorkersCountAsync(HttpContext context,
-        SchedulerState schedulerState, IWorkerRepository workerRepository)
-        => TypedResults.Ok(new SchedulerStateResponse(await workerRepository.CountAsync(),
-            schedulerState.DesiredNumberOfWorkers));
+    private static async Task<Microsoft.AspNetCore.Http.HttpResults.Ok<SchedulerStateResponse>> WorkersCountAsync(HttpContext context,
+         IDesiredStateService desiredStateService, IWorkerRepository workerRepository) =>
+        TypedResults.Ok(new SchedulerStateResponse(await workerRepository.CountAsync(),
+            await desiredStateService.DesiredNumberOfWorkersAsync()));
 
-    public static async Task<Ok> ScaleAsync(HttpContext context, SchedulerState schedulerState,
+    public static async Task<Results<Ok, InternalServerError<string>>> ScaleAsync(HttpContext context, IDesiredStateService  desiredStateService, 
         ScaleWorkersRequest scaleWorkersRequest)
     {
-        schedulerState.DesiredNumberOfWorkers = scaleWorkersRequest.Count;
+        IResult result = await desiredStateService.ScaleAsync(scaleWorkersRequest.DesiredNumberOfWorkers);
+        if (result is CriticalError criticalError)
+        {
+            return TypedResults.InternalServerError(criticalError.Message);
+        }
         return TypedResults.Ok();
     }
 
-    public record ScaleWorkersRequest(int Count);
+    public record ScaleWorkersRequest(int DesiredNumberOfWorkers);
 }
