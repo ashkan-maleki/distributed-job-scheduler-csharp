@@ -12,7 +12,7 @@ public class SchedulerDbContext(ILogger<SchedulerDbContext> logger, DbContextOpt
 {
     public DbSet<Job> Jobs { get; set; }
     public DbSet<Worker> Workers { get; set; }
-    public DbSet<SchedulerState> SchedulerStates { get; set; }
+    public DbSet<DesiredState> SchedulerStates { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
