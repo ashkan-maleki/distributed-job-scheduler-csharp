@@ -1,5 +1,4 @@
-﻿using System.Net.Http.Headers;
-using Bogus;
+﻿using Bogus;
 using Master.Domain.Models;
 using Master.Domain.Repositories;
 using Master.Domain.Services;
@@ -11,6 +10,65 @@ public class WorkerService(IWorkerRepository workerRepository, IDesiredStateRepo
 {
     public async Task<List<Worker>> AllAsync() => await workerRepository.AllAsync();
 
+   public async Task<Result<Worker>> RegisterAsync()
+    {
+        int currentNumberOfWorkers = await workerRepository.CountAsync();
+        Result<DesiredState> schedulerStateResult = await desiredStateRepository.GetAsync();
+        if (schedulerStateResult.NotFound)
+        {
+            return schedulerStateResult.NotFoundResult;
+        }
+
+        int desiredNumberOfWorkers = schedulerStateResult.OkResult.Value.DesiredNumberOfWorkers;
+        if (currentNumberOfWorkers >= desiredNumberOfWorkers)
+        {
+            return new DomainFailure("We cannot register new workers now; wait.");
+        }
+
+        Faker newFaker = new Faker();
+        string name = newFaker.Company.CompanyName()
+            .ToLower()
+            .Replace(" ", "-");
+        Result<Worker> workerResult = await workerRepository.GetUnregisteredAsync();
+        if (workerResult.NotFound)
+        {
+            return workerResult.NotFoundResult;
+        }
+
+        Worker worker = workerResult.OkResult.Value;
+        worker.Register();
+
+        IResult result = await workerRepository.UnitOfWork.SaveEntitiesAsync();
+        if (result is CriticalError criticalError)
+        {
+            return new CriticalError(criticalError.Message);
+        }
+
+        return worker;
+    }
+
+    public async Task<IResult> ReportHeartBeatAsync(Guid workerId)
+    {
+        Result<Worker> workerResult = await workerRepository.GetAsync(workerId);
+        if (workerResult.NotFound)
+        {
+            return workerResult.NotFoundResult;
+        }
+
+        if (workerResult.TryGetValue(out Worker? worker))
+        {
+            worker.ReportHeartBeat();
+            IResult result = await workerRepository.UnitOfWork.SaveEntitiesAsync();
+
+            if (result is CriticalError criticalError)
+            {
+                return new CriticalError(criticalError.Message);
+            }
+        }
+
+        return new Ok();
+    }
+    
     private async Task ScaleUpAsync(int count)
     {
         Faker faker = new();
@@ -49,67 +107,5 @@ public class WorkerService(IWorkerRepository workerRepository, IDesiredStateRepo
         return await workerRepository.UnitOfWork.SaveEntitiesAsync();
     }
 
-    public async Task<Result<Worker>> RegisterAsync()
-    {
-        int currentNumberOfWorkers = await workerRepository.CountAsync();
-        Result<DesiredState> schedulerStateResult = await desiredStateRepository.GetAsync();
-        if (schedulerStateResult.NotFound)
-        {
-            return schedulerStateResult.NotFoundResult;
-        }
-
-        int desiredNumberOfWorkers = schedulerStateResult.OkResult.Value.DesiredNumberOfWorkers;
-        if (currentNumberOfWorkers >= desiredNumberOfWorkers)
-        {
-            return new DomainFailure("We cannot register new workers now; wait.");
-        }
-
-        Faker newFaker = new Faker();
-        string name = newFaker.Company.CompanyName()
-            .ToLower()
-            .Replace(" ", "-");
-        Result<Worker> workerResult = await workerRepository.GetUnregisteredAsync();
-        if (workerResult.NotFound)
-        {
-            return workerResult.NotFoundResult;
-        }
-
-        Worker worker = workerResult.OkResult.Value;
-        worker.Register();
-
-        IResult result = await workerRepository.UnitOfWork.SaveEntitiesAsync();
-        if (result is CriticalError criticalError)
-        {
-            return new CriticalError(criticalError.Message);
-        }
-
-        return worker;
-    }
-
-    public Task<IResult> UnregisterAsync(Worker worker)
-    {
-        throw new NotImplementedException();
-    }
-
-    public async Task<IResult> ReportHeartBeatAsync(Guid workerId)
-    {
-        Result<Worker> workerResult = await workerRepository.GetAsync(workerId);
-        if (workerResult.NotFound)
-        {
-            return workerResult.NotFoundResult;
-        }
-
-        if (workerResult.TryGetValue(out Worker? worker))
-        {
-            worker.ReportHeartBeat();
-            IResult result = await workerRepository.UnitOfWork.SaveEntitiesAsync();
-
-            if (result is CriticalError criticalError)
-            {
-                return new CriticalError(criticalError.Message);
-            }
-        }
-
-        return new Ok();
-    }
+    public async Task<bool> CommitSuicideAsync(Guid workerId) => await workerRepository.AnyAsync(workerId);
 }
