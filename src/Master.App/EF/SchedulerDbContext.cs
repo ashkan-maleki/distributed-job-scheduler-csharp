@@ -7,8 +7,7 @@ using Shared.Domain.EF;
 
 namespace Master.App.EF;
 
-public class SchedulerDbContext(ILogger<SchedulerDbContext> logger, DbContextOptions<SchedulerDbContext> options)
-    : DbContext(options), IUnitOfWork
+public class SchedulerDbContext(DbContextOptions<SchedulerDbContext> options) : DbContext(options), IUnitOfWork
 {
     public DbSet<Job> Jobs { get; set; }
     public DbSet<Worker> Workers { get; set; }
@@ -44,14 +43,11 @@ public class SchedulerDbContext(ILogger<SchedulerDbContext> logger, DbContextOpt
         }
         catch (DbUpdateConcurrencyException e)
         {
-            logger.LogCritical(e, "ConcurrencyException");
             return new CriticalError("a concurrency violation is encountered while saving to the database.");
         }
         catch (DbUpdateException e)
         {
-            logger.LogCritical(e, "Exception");
             return new CriticalError("an error is encountered while saving to the database.");
-            ;
         }
 
         return new Ok();
@@ -68,7 +64,7 @@ public class SchedulerDbContext(ILogger<SchedulerDbContext> logger, DbContextOpt
 // Verify:
 // dotnet ef
 
-// dotnet ef migrations add InitialCreate --project src/Master.App --startup-project src/Master.Rest --output-dir EF/Migrations
+// dotnet ef migrations add AddDesiredState --project src/Master.App --startup-project src/Master.Rest --output-dir EF/Migrations
 // dotnet ef database update --project src/Master.App --startup-project src/Master.Rest
 
 // [Timestamp]

@@ -44,6 +44,20 @@ namespace Master.App.EF.Migrations
                     b.ToTable("Jobs");
                 });
 
+            modelBuilder.Entity("Master.Domain.Models.DesiredState", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("DesiredNumberOfWorkers")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("SchedulerStates");
+                });
+
             modelBuilder.Entity("Master.Domain.Models.Worker", b =>
                 {
                     b.Property<Guid>("Id")
@@ -53,12 +67,15 @@ namespace Master.App.EF.Migrations
                     b.Property<int>("CurrentState")
                         .HasColumnType("INTEGER");
 
-                    b.Property<DateTime>("HeartBeat")
+                    b.Property<DateTime>("LastHeartBeat")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("RegisteredAt")
                         .HasColumnType("TEXT");
 
                     b.Property<long>("Version")
