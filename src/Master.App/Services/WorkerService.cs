@@ -99,11 +99,11 @@ public class WorkerService(IWorkerRepository workerRepository, IDesiredStateRepo
     public async Task<IResult> ScaleAsync(int count)
     {
         await ScaleUpAsync(count);
-        IResult result = await ScaleDownAsync(count);
-        if (result is NotFound notFound)
-        {
-            return notFound;
-        }
+        // IResult result = await ScaleDownAsync(count);
+        // if (result is NotFound notFound)
+        // {
+        //     return notFound;
+        // }
         return await workerRepository.UnitOfWork.SaveEntitiesAsync();
     }
 
