@@ -12,8 +12,8 @@ public static class SchedulerStatesApi
 {
     public static RouteGroupBuilder MapSchedulerStatesApi(this RouteGroupBuilder app)
     {
-        app.MapPost("/scheduler-states/scale", ScaleAsync);
-        app.MapGet("/scheduler-states/workers-count", WorkersCountAsync);
+        app.MapPost("/scale", ScaleAsync);
+        app.MapGet("/workers-count", WorkersCountAsync);
         return app;
     }
 
