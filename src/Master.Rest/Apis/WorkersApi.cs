@@ -11,8 +11,8 @@ public static class WorkersApi
     public static RouteGroupBuilder MapWorkersApi(this RouteGroupBuilder app)
     {
         app.MapGet("/worker", AllWorkers);
-        app.MapPost("/worker/scale", ScaleWorkers);
-        app.MapPost("/worker/register", RegisterAsync);
+        app.MapPost("/worker/scale", Suicide);
+        app.MapGet("/worker/register", RegisterAsync);
         app.MapPost("/worker/heartbeat", HeartBeatAsync);
         return app;
     }
@@ -29,11 +29,11 @@ public static class WorkersApi
     }
     
     // private static async Task<Results<HttpResults.Ok, HttpResults.NotFound, BadRequest<string>, InternalServerError<string>>> 
-    private static async Task<HttpResults.Ok> 
-        ScaleWorkers(HttpContext context, IWorkerService workerService, ScaleWorkersRequest scaleWorkersRequest)
+    private static async Task<HttpResults.Ok<SuicideResponse>> 
+        Suicide(HttpContext context, IWorkerService workerService, SuicideRequest request)
     {
-        IResult result = await workerService.ScaleAsync(scaleWorkersRequest.Count);
-        return TypedResults.Ok();
+        SuicideResponse response = new(await workerService.CommitSuicideAsync(request.WorkerId));
+        return TypedResults.Ok(response);
     }
 
     private static HttpResults.Results<HttpResults.Ok<Worker>, HttpResults.NotFound<string>,
@@ -71,9 +71,11 @@ public static class WorkersApi
     }
 }
 
-public record RegisterWorkerRequest(string Name);
+public record SuicideRequest(Guid WorkerId);
 
-public record ScaleWorkersRequest(int Count);
+public record SuicideResponse(bool ShouldICommitSuicide);
+
+
 
 //
 // public static class WorkersApiDeprecated
