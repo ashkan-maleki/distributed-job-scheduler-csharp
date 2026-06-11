@@ -105,6 +105,7 @@ public class Result<T> : Result
     }
     
     [MemberNotNullWhen(false, nameof(NotFoundResult))]
+    [MemberNotNullWhen(false, nameof(DomainFailureResult))]
     [MemberNotNullWhen(true, nameof(OkResult))]
     
     public bool Ok => _result is Ok<T>;
@@ -112,8 +113,13 @@ public class Result<T> : Result
     [MemberNotNullWhen(false, nameof(OkResult))]
     public bool NotFound => _result is NotFound;
     
+    [MemberNotNullWhen(true, nameof(DomainFailureResult))]
+    [MemberNotNullWhen(false, nameof(OkResult))]
+    public bool DomainFailed => _result is DomainFailure;
+    
     public NotFound? NotFoundResult => _result as NotFound;
     public Ok<T>? OkResult => _result as Ok<T>;
+    public DomainFailure? DomainFailureResult => _result as DomainFailure;
 }
 
 
