@@ -22,4 +22,3 @@ while (await mainService.Program())
 
 
 public record JobRequest(string Name);
-public record ScaleWorkersRequest(int Count);
