@@ -1,3 +1,4 @@
+using MassTransit;
 using Master.App.EF;
 using Master.App.Repositories;
 using Master.App.Services;
@@ -6,6 +7,7 @@ using Master.Domain.Repositories;
 using Master.Domain.Services;
 using Master.Rest.Apis;
 using Master.Rest.BackgroundServices;
+using Master.Rest.Consumers;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -18,11 +20,19 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddHealthChecks();
 
 builder.Services.AddDbContext<SchedulerDbContext>(options => { options.UseSqlite("Data Source=scheduler.db"); });
+builder.Services.AddScoped<IDesiredStateRepository, DesiredStateRepository>();
 builder.Services.AddScoped<IWorkerRepository, WorkerRepository>();
 builder.Services.AddScoped<IJobRepository, JobRepository>();
+builder.Services.AddScoped<IDesiredStateService, DesiredStateService>();
 builder.Services.AddScoped<IWorkerService, WorkerService>();
 builder.Services.AddScoped<IJobService, JobService>();
-builder.Services.AddHostedService<WorkersCountBackgroundService>();
+// builder.Services.AddHostedService<WorkersCountBackgroundService>();
+builder.Services.AddMassTransit(x => 
+{
+    x.UsingInMemory((ctx, cfg) => cfg.ConfigureEndpoints(ctx));
+    x.AddConsumer<DesiredStateConsumer>();
+});
+// builder.Services.AddMassTransitHostedService();
 
 
 var app = builder.Build();
@@ -37,7 +47,8 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-app.MapGroup("/api").MapJobsApi().MapWorkersApi().MapSchedulerStatesApi().MapHealthChecks("/hc");
+app.MapGroup("/api").MapJobsApi().MapWorkersApi().MapHealthChecks("/hc");
+app.MapGroup("/api/scheduler-states").MapSchedulerStatesApi();
 
 app.Run();
 
