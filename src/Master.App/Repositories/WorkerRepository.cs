@@ -15,6 +15,10 @@ public class WorkerRepository(SchedulerDbContext context) : IWorkerRepository
     public async Task<List<Worker>> AllAsync() => await context.Workers.ToListAsync();
 
     public async Task<int> CountAsync() => await context.Workers.CountAsync();
+    public async Task<bool> AnyAsync(Guid workerId) => await context.Workers
+        .Where(w => w.Id == workerId)
+        .AnyAsync();
+
 
     public async Task AddAsync(Worker worker) => _ = await context.Workers.AddAsync(worker);
 

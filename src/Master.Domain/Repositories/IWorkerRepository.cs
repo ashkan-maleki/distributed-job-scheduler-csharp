@@ -8,6 +8,7 @@ public interface IWorkerRepository : IRepository
 {
     public Task<List<Worker>> AllAsync();
     public Task<int> CountAsync();
+    public Task<bool> AnyAsync(Guid workerId);
     
     public Task AddAsync(Worker worker);
     public void Remove(Worker worker);
