@@ -89,6 +89,24 @@ namespace Master.App.EF.Migrations
                     b.ToTable("Workers");
                 });
 
+            modelBuilder.Entity("Master.Domain.Models.WorkersState", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("DesiredNumberOfWorkers")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("NumberOfWorkersToRegister")
+                        .IsConcurrencyToken()
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("WorkersStates");
+                });
+
             modelBuilder.Entity("Master.Domain.Aggregates.Job", b =>
                 {
                     b.HasOne("Master.Domain.Models.Worker", null)
