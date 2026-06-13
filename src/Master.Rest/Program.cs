@@ -19,14 +19,15 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddHealthChecks();
 
-builder.Services.AddSingleton<WorkersState>();
 builder.Services.AddDbContext<SchedulerDbContext>(options => { options.UseSqlite("Data Source=scheduler.db"); });
+builder.Services.AddScoped<IWorkersStateRepository, WorkersStateRepository>();
 builder.Services.AddScoped<IDesiredStateRepository, DesiredStateRepository>();
 builder.Services.AddScoped<IWorkerRepository, WorkerRepository>();
 builder.Services.AddScoped<IJobRepository, JobRepository>();
 builder.Services.AddScoped<IDesiredStateService, DesiredStateService>();
 builder.Services.AddScoped<IWorkerService, WorkerService>();
 builder.Services.AddScoped<IJobService, JobService>();
+builder.Services.AddScoped<IWorkersStateService, WorkersStateService>();
 // builder.Services.AddHostedService<WorkersCountBackgroundService>();
 builder.Services.AddMassTransit(x => 
 {
