@@ -1,5 +1,4 @@
-﻿using System.Collections.Concurrent;
-using Master.App.EF;
+﻿using Master.App.EF;
 using Master.Domain.Models;
 using Master.Domain.Repositories;
 using Microsoft.EntityFrameworkCore;

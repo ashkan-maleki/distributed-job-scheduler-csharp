@@ -1,7 +1,6 @@
 ﻿using Master.Domain.Aggregates;
 using Master.Domain.Models;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 using Shared.Domain.DTOs;
 using Shared.Domain.EF;
 

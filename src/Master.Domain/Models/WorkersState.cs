@@ -19,6 +19,7 @@ public class WorkersState
     public int NumberOfWorkersToRegister { get; set; }
 
     public bool RegistrationAllowed => NumberOfWorkersToRegister > 0;
+    public bool RegistrationNotAllowed => !RegistrationAllowed;
 
 
     public void Register()

@@ -6,17 +6,22 @@ using Shared.Domain.DTOs;
 
 namespace Master.App.Services;
 
-public class WorkerService(IWorkerRepository workerRepository, IWorkersStateService workersStateService) : IWorkerService
+public class WorkerService(IWorkerRepository workerRepository, IWorkersStateRepository workersStateRepository)
+    : IWorkerService
 {
     public async Task<List<Worker>> AllAsync() => await workerRepository.AllAsync();
 
-   public async Task<Result<Worker>> RegisterAsync()
+    public async Task<Result<Worker>> RegisterAsync()
     {
-        if (workersStateService.RegistrationAllowed)
+        Result<WorkersState> workersStateResult = await workersStateRepository.GetAsync();
+        if (workersStateResult.NotFound)
+            return workersStateResult.NotFoundResult;
+        WorkersState workersState = workersStateResult.OkResult.Value;
+        if (workersState.RegistrationNotAllowed)
         {
             return new DomainFailure("We cannot register new workers now; wait.");
         }
-        
+
         Result<Worker> workerResult = await workerRepository.GetUnregisteredAsync();
         if (workerResult.NotFound)
         {
@@ -25,17 +30,14 @@ public class WorkerService(IWorkerRepository workerRepository, IWorkersStateServ
 
         Worker worker = workerResult.OkResult.Value;
         worker.Register();
-        
+        workersState.Register();
+
         IResult result = await workerRepository.UnitOfWork.SaveEntitiesAsync();
         if (result is CriticalError criticalError)
         {
             return criticalError;
         }
-        result = await workersStateService.RegisterAsync();
-        if (result is CriticalError criticalError1)
-        {
-            return criticalError1;
-        }
+
         return worker;
     }
 
@@ -54,13 +56,13 @@ public class WorkerService(IWorkerRepository workerRepository, IWorkersStateServ
 
             if (result is CriticalError criticalError)
             {
-                return new CriticalError(criticalError.Message);
+                return criticalError;
             }
         }
 
         return new Ok();
     }
-    
+
     private async Task ScaleUpAsync(int count)
     {
         Faker faker = new();
@@ -72,7 +74,7 @@ public class WorkerService(IWorkerRepository workerRepository, IWorkersStateServ
             await workerRepository.AddAsync(new Worker(name));
         }
     }
-    
+
     private async Task<IResult> ScaleDownAsync(int count)
     {
         for (int i = await workerRepository.CountAsync(); i > count; i--)
@@ -82,6 +84,7 @@ public class WorkerService(IWorkerRepository workerRepository, IWorkersStateServ
             {
                 return result.NotFoundResult;
             }
+
             workerRepository.Remove(result.OkResult.Value);
         }
 
@@ -91,16 +94,18 @@ public class WorkerService(IWorkerRepository workerRepository, IWorkersStateServ
     public async Task<IResult> ScaleAsync(int count)
     {
         await ScaleUpAsync(count);
-
+        
+        WorkersState workersState = new(count, await workerRepository.CountAsync());
+        await workersStateRepository.AddAsync(workersState);
 
         IResult result = await workerRepository.UnitOfWork.SaveEntitiesAsync();
         if (result is CriticalError criticalError)
         {
             return criticalError;
         }
-        WorkersState workersState = new(count, await workerRepository.CountAsync());
-        await workersStateService.AddAsync(workersState);
+
         return new Ok();
+        
     }
 
     public async Task<bool> CommitSuicideAsync(Guid workerId) => await workerRepository.AnyAsync(workerId);
