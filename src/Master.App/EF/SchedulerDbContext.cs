@@ -12,6 +12,7 @@ public class SchedulerDbContext(DbContextOptions<SchedulerDbContext> options) : 
     public DbSet<Job> Jobs { get; set; }
     public DbSet<Worker> Workers { get; set; }
     public DbSet<DesiredState> SchedulerStates { get; set; }
+    public DbSet<WorkersState>  WorkersStates { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -32,6 +33,10 @@ public class SchedulerDbContext(DbContextOptions<SchedulerDbContext> options) : 
         modelBuilder.Entity<Worker>()
             .HasIndex(w => w.Name)
             .IsUnique();
+        
+        modelBuilder.Entity<WorkersState>()
+            .Property(ws => ws.NumberOfWorkersToRegister)
+            .IsConcurrencyToken();
         base.OnModelCreating(modelBuilder);
     }
 
