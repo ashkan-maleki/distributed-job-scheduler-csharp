@@ -6,16 +6,13 @@ using Shared.Domain.DTOs;
 
 namespace Master.App.Services;
 
-public class WorkerService(IWorkerRepository workerRepository) : IWorkerService
+public class WorkerService(IWorkerRepository workerRepository, IWorkersStateService workersStateService) : IWorkerService
 {
     public async Task<List<Worker>> AllAsync() => await workerRepository.AllAsync();
 
    public async Task<Result<Worker>> RegisterAsync()
     {
-        int currentNumberOfWorkers = await workerRepository.CountAsync();
-        
-        WorkersState workersState = new(currentNumberOfWorkers, await workerRepository.CountAsync());
-        if (workersState.RegistrationAllowed)
+        if (workersStateService.RegistrationAllowed)
         {
             return new DomainFailure("We cannot register new workers now; wait.");
         }
@@ -28,14 +25,17 @@ public class WorkerService(IWorkerRepository workerRepository) : IWorkerService
 
         Worker worker = workerResult.OkResult.Value;
         worker.Register();
-        workersState.Register();
         
         IResult result = await workerRepository.UnitOfWork.SaveEntitiesAsync();
         if (result is CriticalError criticalError)
         {
-            return new CriticalError(criticalError.Message);
+            return criticalError;
         }
-
+        result = await workersStateService.RegisterAsync();
+        if (result is CriticalError criticalError1)
+        {
+            return criticalError1;
+        }
         return worker;
     }
 
@@ -99,6 +99,7 @@ public class WorkerService(IWorkerRepository workerRepository) : IWorkerService
             return criticalError;
         }
         WorkersState workersState = new(count, await workerRepository.CountAsync());
+        await workersStateService.AddAsync(workersState);
         return new Ok();
     }
 
