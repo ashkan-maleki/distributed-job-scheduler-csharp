@@ -8,17 +8,17 @@ namespace Worker.Rest.HttpServices.Master;
 
 public interface IWorkerHttpClient
 {
-    Task<Result<Domain.Worker>> Register(string name);
+    Task<Result<Domain.Worker>> Register();
     Task<bool> HeartBeat(Guid workerId);
 }
 
-public record RegisterWorkerRequest(string Name);
+
 
 public class WorkerHttpClient(IOptions<ApiConfig> options,  HttpClient client, ILogger<WorkerHttpClient> logger) : IWorkerHttpClient
 {
-    public async Task<Result<Domain.Worker>> Register(string name)
+    public async Task<Result<Domain.Worker>> Register()
     {
-        HttpResponseMessage httpResponseMessage = await client.PostAsJsonAsync(options.Value.MasterApis.WorkerApis.Registration, new RegisterWorkerRequest(name));
+        HttpResponseMessage httpResponseMessage = await client.GetAsync(options.Value.MasterApis.WorkerApis.Registration);
         
         if (httpResponseMessage.StatusCode is (System.Net.HttpStatusCode.BadRequest 
             or System.Net.HttpStatusCode.NotFound

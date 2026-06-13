@@ -19,6 +19,7 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddHealthChecks();
 
+builder.Services.AddSingleton<WorkersState>();
 builder.Services.AddDbContext<SchedulerDbContext>(options => { options.UseSqlite("Data Source=scheduler.db"); });
 builder.Services.AddScoped<IDesiredStateRepository, DesiredStateRepository>();
 builder.Services.AddScoped<IWorkerRepository, WorkerRepository>();

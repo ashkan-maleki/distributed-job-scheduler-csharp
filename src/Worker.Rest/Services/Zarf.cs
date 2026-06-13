@@ -1,12 +1,10 @@
-﻿using Bogus;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Shared.Domain.DTOs;
 using Shared.Domain.Models;
 using Worker.Rest.Contexts;
 using Worker.Rest.EF;
 using Worker.Rest.HttpServices.Master;
 using Worker.Rest.Works;
-using IResult = Shared.Domain.DTOs.IResult;
 
 namespace Worker.Rest.Services;
 
@@ -16,9 +14,6 @@ public class Zarf(
     IJobHttpClient jobHttpClient,
     IDbContextFactory<WorkerDbContext> factory)
 {
-    public Guid Id { get; set; } = Guid.NewGuid();
-    public Guid WorkerId { get; set; } = Guid.Empty;
-
     public static async Task<Result<Zarf>> RegisterAsync(ILogger<Zarf> logger,
         IWorkerHttpClient workerHttpClient,
         IJobHttpClient jobHttpClient, IDbContextFactory<WorkerDbContext> factory,
@@ -26,17 +21,15 @@ public class Zarf(
     {
         Zarf zarf = new(logger, workerHttpClient, jobHttpClient, factory);
         Result<Domain.Worker> result = await zarf.RegisterAsync(context, stoppingToken);
-        if (result.WrappedResult is DomainFailure failure)
+        if (result.DomainFailed)
         {
-            return failure;
-        }
-
-        if (result.TryGetValue(out Domain.Worker? worker))
-        {
-            await zarf.StartHeartBeatAsync(context, worker, stoppingToken);
-            await zarf.StartDoingJobAsync(context, worker, stoppingToken);    
+            return result.DomainFailureResult;
         }
         
+        Domain.Worker? worker = result.OkResult.Value;
+        
+        await zarf.StartHeartBeatAsync(context, worker, stoppingToken);
+        await zarf.StartDoingJobAsync(context, worker, stoppingToken);
         return zarf;
     }
 
@@ -48,26 +41,21 @@ public class Zarf(
             await Task.Delay(TimeSpan.FromSeconds(1), stoppingToken);
         }
 
-        Faker faker = new Faker();
-        string name = faker.Company.CompanyName()
-            .ToLower()
-            .Replace(" ", "-");
-
-        Result<Domain.Worker> result = await workerHttpClient.Register(string.Empty);
-        if (result.WrappedResult is Ok<Domain.Worker> ok)
+        
+        Result<Domain.Worker> result = await workerHttpClient.Register();
+        if (result.DomainFailed)
         {
-            Domain.Worker worker = ok.Value;
-            await using WorkerDbContext db = await factory.CreateDbContextAsync(stoppingToken);
-            worker.Register();
-            await db.Workers.AddAsync(worker, stoppingToken);
-            await db.SaveChangesAsync(stoppingToken);
-            WorkerId = worker.Id;
-            logger.LogInformation($"Registered {name} (worker id: {worker.Id})");
-            return worker;
+            return new DomainFailure($"Failed to register: " + result.DomainFailureResult.Message);
         }
-
-        logger.LogError($"Failed to register {name}");
-        return new DomainFailure($"Failed to register {name}");
+        
+        Domain.Worker worker = result.OkResult.Value;
+        await using WorkerDbContext db = await factory.CreateDbContextAsync(stoppingToken);
+        worker.Register();
+        await db.Workers.AddAsync(worker, stoppingToken);
+        await db.SaveChangesAsync(stoppingToken);
+        
+        logger.LogInformation($"Registered the worker with id: {worker.Id}, named: {worker.Name}");
+        return worker;
     }
 
     private async Task StartHeartBeatAsync(WorkerContext context, Domain.Worker worker, CancellationToken stoppingToken)

@@ -7,7 +7,7 @@ using Shared.Domain.DTOs;
 
 namespace Master.App.Services;
 
-public class DesiredStateService(IDesiredStateRepository desiredStateRepository,
+public class DesiredStateService(IDesiredStateRepository desiredStateRepository, IWorkerRepository workerRepository,
     IPublishEndpoint publishEndpoint) : IDesiredStateService
 {
     public async Task<IResult> ScaleAsync(int desiredNumberOfWorkers)
@@ -17,7 +17,8 @@ public class DesiredStateService(IDesiredStateRepository desiredStateRepository,
         {
             desiredStateRepository.Remove(schedulerState);
         }
-        await desiredStateRepository.AddAsync(new DesiredState(desiredNumberOfWorkers));
+        int currentNumberOfWorkers = await workerRepository.CountAsync();
+        await desiredStateRepository.AddAsync(new DesiredState(desiredNumberOfWorkers, currentNumberOfWorkers));
         IResult result = await desiredStateRepository.UnitOfWork.SaveEntitiesAsync();
         if (result is CriticalError criticalError)
         {

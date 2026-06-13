@@ -6,25 +6,20 @@ using Shared.Domain.DTOs;
 
 namespace Master.App.Services;
 
-public class WorkerService(IWorkerRepository workerRepository, IDesiredStateRepository desiredStateRepository) : IWorkerService
+public class WorkerService(IWorkerRepository workerRepository, IDesiredStateRepository desiredStateRepository, WorkersState workersState) : IWorkerService
 {
     public async Task<List<Worker>> AllAsync() => await workerRepository.AllAsync();
 
    public async Task<Result<Worker>> RegisterAsync()
     {
         int currentNumberOfWorkers = await workerRepository.CountAsync();
-        Result<DesiredState> schedulerStateResult = await desiredStateRepository.GetAsync();
-        if (schedulerStateResult.NotFound)
-        {
-            return schedulerStateResult.NotFoundResult;
-        }
-
-        int desiredNumberOfWorkers = schedulerStateResult.OkResult.Value.DesiredNumberOfWorkers;
-        if (currentNumberOfWorkers >= desiredNumberOfWorkers)
+        
+        if (currentNumberOfWorkers >= workersState.DesiredNumberOfWorkers &&  workersState.AnyWorkersToRegister)
         {
             return new DomainFailure("We cannot register new workers now; wait.");
         }
 
+        workersState.Register();
         Faker newFaker = new Faker();
         string name = newFaker.Company.CompanyName()
             .ToLower()
@@ -99,12 +94,16 @@ public class WorkerService(IWorkerRepository workerRepository, IDesiredStateRepo
     public async Task<IResult> ScaleAsync(int count)
     {
         await ScaleUpAsync(count);
-        // IResult result = await ScaleDownAsync(count);
-        // if (result is NotFound notFound)
-        // {
-        //     return notFound;
-        // }
-        return await workerRepository.UnitOfWork.SaveEntitiesAsync();
+
+
+        IResult result = await workerRepository.UnitOfWork.SaveEntitiesAsync();
+        if (result is CriticalError criticalError)
+        {
+            return criticalError;
+        }
+        workersState.DesiredNumberOfWorkers = count;
+        workersState.NumberOfWorkersToRegister = count - await workerRepository.CountAsync();
+        return new Ok();
     }
 
     public async Task<bool> CommitSuicideAsync(Guid workerId) => await workerRepository.AnyAsync(workerId);

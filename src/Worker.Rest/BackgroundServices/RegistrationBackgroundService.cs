@@ -29,7 +29,7 @@ public class RegistrationBackgroundService(
                 .ToLower()
                 .Replace(" ", "-");
             
-            Result<Domain.Worker> result = await httpClient.Register(name);
+            Result<Domain.Worker> result = await httpClient.Register();
             if (result.WrappedResult is Ok<Domain.Worker> ok)
             {
                 Domain.Worker worker = ok.Value;
