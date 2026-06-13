@@ -6,7 +6,7 @@ using Shared.Domain.DTOs;
 
 namespace Master.App.Services;
 
-public class WorkerService(IWorkerRepository workerRepository, IDesiredStateRepository desiredStateRepository, WorkersState workersState) : IWorkerService
+public class WorkerService(IWorkerRepository workerRepository) : IWorkerService
 {
     public async Task<List<Worker>> AllAsync() => await workerRepository.AllAsync();
 
@@ -14,16 +14,12 @@ public class WorkerService(IWorkerRepository workerRepository, IDesiredStateRepo
     {
         int currentNumberOfWorkers = await workerRepository.CountAsync();
         
-        if (currentNumberOfWorkers >= workersState.DesiredNumberOfWorkers &&  workersState.AnyWorkersToRegister)
+        WorkersState workersState = new(currentNumberOfWorkers, await workerRepository.CountAsync());
+        if (workersState.RegistrationAllowed)
         {
             return new DomainFailure("We cannot register new workers now; wait.");
         }
-
-        workersState.Register();
-        Faker newFaker = new Faker();
-        string name = newFaker.Company.CompanyName()
-            .ToLower()
-            .Replace(" ", "-");
+        
         Result<Worker> workerResult = await workerRepository.GetUnregisteredAsync();
         if (workerResult.NotFound)
         {
@@ -32,7 +28,8 @@ public class WorkerService(IWorkerRepository workerRepository, IDesiredStateRepo
 
         Worker worker = workerResult.OkResult.Value;
         worker.Register();
-
+        workersState.Register();
+        
         IResult result = await workerRepository.UnitOfWork.SaveEntitiesAsync();
         if (result is CriticalError criticalError)
         {
@@ -101,8 +98,7 @@ public class WorkerService(IWorkerRepository workerRepository, IDesiredStateRepo
         {
             return criticalError;
         }
-        workersState.DesiredNumberOfWorkers = count;
-        workersState.NumberOfWorkersToRegister = count - await workerRepository.CountAsync();
+        WorkersState workersState = new(count, await workerRepository.CountAsync());
         return new Ok();
     }
 
