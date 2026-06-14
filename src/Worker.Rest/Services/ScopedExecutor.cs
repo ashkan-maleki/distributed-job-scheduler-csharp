@@ -2,13 +2,9 @@
 
 public interface IScopedExecutor
 {
-    Task Use<T>(
-        Func<T, Task> action)
-        where T : notnull;
+    Task Use<T>(Func<T, Task> action) where T : notnull;
 
-    Task<TResult> Use<T, TResult>(
-        Func<T, Task<TResult>> action)
-        where T : notnull;
+    Task<TResult> Use<T, TResult>(Func<T, Task<TResult>> action) where T : notnull;
 }
 
 public class ScopedExecutor(

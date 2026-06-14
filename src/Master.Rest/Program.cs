@@ -27,6 +27,7 @@ builder.Services.AddScoped<IJobRepository, JobRepository>();
 builder.Services.AddScoped<IDesiredStateService, DesiredStateService>();
 builder.Services.AddScoped<IWorkerService, WorkerService>();
 builder.Services.AddScoped<IJobService, JobService>();
+builder.Services.AddSingleton<IConcurrentRegistrationService, ConcurrentRegistrationService>();
 
 // builder.Services.AddHostedService<WorkersCountBackgroundService>();
 builder.Services.AddMassTransit(x => 

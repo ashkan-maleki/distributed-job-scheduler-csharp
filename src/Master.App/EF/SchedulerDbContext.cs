@@ -51,11 +51,11 @@ public class SchedulerDbContext(DbContextOptions<SchedulerDbContext> options) : 
         }
         catch (DbUpdateConcurrencyException e)
         {
-            return new CriticalError("a concurrency violation is encountered while saving to the database.");
+            return new CriticalError(e,"a concurrency violation is encountered while saving to the database.");
         }
         catch (DbUpdateException e)
         {
-            return new CriticalError("an error is encountered while saving to the database.");
+            return new CriticalError(e,"an error is encountered while saving to the database.");
         }
 
         return new Ok();

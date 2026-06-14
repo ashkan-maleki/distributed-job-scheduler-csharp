@@ -34,7 +34,10 @@ public class Error(string error) : Text(false, error);
 public class NotFound(string error) : Error(error);
 public class DomainFailure(string error) : Error(error);
 
-public class CriticalError(string error) : Error(error);
+public class CriticalError(Exception exception, string error) : Error(error)
+{
+    public Exception Exception => exception;
+}
 
 
 
@@ -106,6 +109,7 @@ public class Result<T> : Result
     
     [MemberNotNullWhen(false, nameof(NotFoundResult))]
     [MemberNotNullWhen(false, nameof(DomainFailureResult))]
+    [MemberNotNullWhen(false, nameof(CriticalErrorResult))]
     [MemberNotNullWhen(true, nameof(OkResult))]
     
     public bool Ok => _result is Ok<T>;
@@ -117,9 +121,14 @@ public class Result<T> : Result
     [MemberNotNullWhen(false, nameof(OkResult))]
     public bool DomainFailed => _result is DomainFailure;
     
+    [MemberNotNullWhen(true, nameof(CriticalErrorResult))]
+    [MemberNotNullWhen(false, nameof(OkResult))]
+    public bool CriticalErrorRaised => _result is CriticalError;
+    
     public NotFound? NotFoundResult => _result as NotFound;
     public Ok<T>? OkResult => _result as Ok<T>;
     public DomainFailure? DomainFailureResult => _result as DomainFailure;
+    public CriticalError? CriticalErrorResult => _result as CriticalError;
 }
 
 

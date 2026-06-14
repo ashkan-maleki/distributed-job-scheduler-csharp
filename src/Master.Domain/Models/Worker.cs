@@ -22,12 +22,6 @@ public class Worker(string name, long version = 1)
         Version++;
     }
 
-    public void Unregister()
-    {
-        RegisteredAt = DateTime.MinValue;
-        CurrentState = WorkerState.Idle;
-        Version++;
-    }
     
     public void Kill()
     {

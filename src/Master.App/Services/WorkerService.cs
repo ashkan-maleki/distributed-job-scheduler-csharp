@@ -2,17 +2,22 @@
 using Master.Domain.Models;
 using Master.Domain.Repositories;
 using Master.Domain.Services;
+using Microsoft.Extensions.DependencyInjection;
+using Polly;
+using Polly.Retry;
 using Shared.Domain.DTOs;
 
 namespace Master.App.Services;
 
-public class WorkerService(IWorkerRepository workerRepository, IWorkersStateRepository workersStateRepository)
+public class WorkerService(IWorkerRepository workerRepository, IWorkersStateRepository workersStateRepository,
+    IServiceScopeFactory scopeFactory)
     : IWorkerService
 {
     public async Task<List<Worker>> AllAsync() => await workerRepository.AllAsync();
 
     public async Task<Result<Worker>> RegisterAsync()
     {
+        
         Result<WorkersState> workersStateResult = await workersStateRepository.GetAsync();
         if (workersStateResult.NotFound)
             return workersStateResult.NotFoundResult;
@@ -39,17 +44,12 @@ public class WorkerService(IWorkerRepository workerRepository, IWorkersStateRepo
         IResult result = await workerRepository.UnitOfWork.SaveEntitiesAsync();
         if (result is CriticalError criticalError)
         {
-            worker.Unregister();
-            result = await workerRepository.UnitOfWork.SaveEntitiesAsync();
-            if (result is CriticalError critical)
-            {
-                return critical;
-            }
             return criticalError;
         }
 
         return worker;
     }
+    
 
     public async Task<IResult> ReportHeartBeatAsync(Guid workerId)
     {

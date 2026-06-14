@@ -17,7 +17,7 @@ public static class WorkersApi
         return app;
     }
 
-    private static async Task<HttpResults.Results<HttpResults.Ok<List<Worker>>, HttpResults.NoContent>> 
+    private static async Task<HttpResults.Results<HttpResults.Ok<List<Worker>>, HttpResults.NoContent>>
         AllWorkers(HttpContext context, IWorkerService workerService)
     {
         List<Worker> workers = await workerService.AllAsync();
@@ -25,11 +25,12 @@ public static class WorkersApi
         {
             return TypedResults.NoContent();
         }
+
         return TypedResults.Ok(workers);
     }
-    
+
     // private static async Task<Results<HttpResults.Ok, HttpResults.NotFound, BadRequest<string>, InternalServerError<string>>> 
-    private static async Task<HttpResults.Ok<SuicideResponse>> 
+    private static async Task<HttpResults.Ok<SuicideResponse>>
         Suicide(HttpContext context, IWorkerService workerService, SuicideRequest request)
     {
         SuicideResponse response = new(await workerService.CommitSuicideAsync(request.WorkerId));
@@ -54,16 +55,17 @@ public static class WorkersApi
                 return TypedResults.InternalServerError("unknown error");
         }
     }
+
     private static async Task<HttpResults.Results<HttpResults.Ok<Worker>, HttpResults.NotFound<string>,
-            HttpResults.BadRequest<string>, HttpResults.InternalServerError<string>>> 
-        RegisterAsync(HttpContext context, IWorkerService workerService)
+            HttpResults.BadRequest<string>, HttpResults.InternalServerError<string>>>
+        RegisterAsync(HttpContext context, IConcurrentRegistrationService registrationService)
     {
-        IResult result = await workerService.RegisterAsync();
+        IResult result = await registrationService.RegisterAsync();
         return MapResultsToHttpTypedResults(result);
     }
 
     private static async Task<HttpResults.Results<HttpResults.Ok<Worker>, HttpResults.NotFound<string>,
-            HttpResults.BadRequest<string>, HttpResults.InternalServerError<string>>> 
+            HttpResults.BadRequest<string>, HttpResults.InternalServerError<string>>>
         HeartBeatAsync(HttpContext context, IWorkerService workerService, Guid workerId)
     {
         IResult result = await workerService.ReportHeartBeatAsync(workerId);
