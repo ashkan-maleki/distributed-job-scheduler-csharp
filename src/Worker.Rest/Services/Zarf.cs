@@ -12,14 +12,15 @@ public class Zarf(
     ILogger<Zarf> logger,
     IWorkerHttpClient workerHttpClient,
     IJobHttpClient jobHttpClient,
-    IDbContextFactory<WorkerDbContext> factory)
+    WorkerDbContext dbContext)
 {
     public static async Task<Result<Zarf>> RegisterAsync(ILogger<Zarf> logger,
         IWorkerHttpClient workerHttpClient,
         IJobHttpClient jobHttpClient, IDbContextFactory<WorkerDbContext> factory,
         WorkerContext context, CancellationToken stoppingToken)
     {
-        Zarf zarf = new(logger, workerHttpClient, jobHttpClient, factory);
+        await using WorkerDbContext dbContext = await factory.CreateDbContextAsync(stoppingToken);
+        Zarf zarf = new(logger, workerHttpClient, jobHttpClient, dbContext);
         Result<Domain.Worker> result = await zarf.RegisterAsync(context, stoppingToken);
         if (result.DomainFailed)
         {
@@ -49,10 +50,10 @@ public class Zarf(
         }
         
         Domain.Worker worker = result.OkResult.Value;
-        await using WorkerDbContext db = await factory.CreateDbContextAsync(stoppingToken);
+        
         worker.Register();
-        await db.Workers.AddAsync(worker, stoppingToken);
-        await db.SaveChangesAsync(stoppingToken);
+        await dbContext.Workers.AddAsync(worker, stoppingToken);
+        await dbContext.SaveChangesAsync(stoppingToken);
         
         logger.LogInformation($"Registered the worker with id: {worker.Id}, named: {worker.Name}");
         return worker;
@@ -60,7 +61,6 @@ public class Zarf(
 
     private async Task StartHeartBeatAsync(WorkerContext context, Domain.Worker worker, CancellationToken stoppingToken)
     {
-        await using WorkerDbContext db = await factory.CreateDbContextAsync(stoppingToken);
         while (!stoppingToken.IsCancellationRequested)
         {
             if (context.MasterUnavailable)
@@ -79,7 +79,7 @@ public class Zarf(
             {
                 worker.ReportHeartBeat();
                 logger.LogInformation("Heartbeat complete at {time}", DateTimeOffset.Now);
-                await db.SaveChangesAsync(stoppingToken);
+                await dbContext.SaveChangesAsync(stoppingToken);
             }
         }
     }
@@ -101,7 +101,7 @@ public class Zarf(
             await Task.Delay(TimeSpan.FromSeconds(1), stoppingToken);
         }
 
-        await using WorkerDbContext dbContext = await factory.CreateDbContextAsync(stoppingToken);
+        
 
         if (worker.IsJobAssigned)
         {
@@ -133,7 +133,7 @@ public class Zarf(
             logger.LogError("Instance of job is not ready");
             return;
         }
-        await using WorkerDbContext dbContext = await factory.CreateDbContextAsync(stoppingToken);
+        
 
         var (error, job) = await jobHttpClient.StartJobAsync(worker.Id, worker.JobId, stoppingToken);
 
@@ -157,7 +157,7 @@ public class Zarf(
     
     private async Task FinishJobAsync(WorkerContext context, Domain.Worker worker, CancellationToken stoppingToken)
     {
-        await using WorkerDbContext dbContext = await factory.CreateDbContextAsync(stoppingToken);
+        
         JobCompletionRequest request = new(worker.Id, worker.JobId);
         var (error, job) = await jobHttpClient.ResultJobAsync(request, stoppingToken);
 

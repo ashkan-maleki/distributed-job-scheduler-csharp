@@ -33,6 +33,10 @@ public class SchedulerDbContext(DbContextOptions<SchedulerDbContext> options) : 
             .HasIndex(w => w.Name)
             .IsUnique();
         
+        modelBuilder.Entity<Worker>()
+            .Property(j => j.Version)
+            .IsConcurrencyToken();
+        
         modelBuilder.Entity<WorkersState>()
             .Property(ws => ws.NumberOfWorkersToRegister)
             .IsConcurrencyToken();
@@ -68,7 +72,7 @@ public class SchedulerDbContext(DbContextOptions<SchedulerDbContext> options) : 
 // Verify:
 // dotnet ef
 
-// dotnet ef migrations add AddDesiredState --project src/Master.App --startup-project src/Master.Rest --output-dir EF/Migrations
+// dotnet ef migrations add AddConcurrencyTokenToWorker --project src/Master.App --startup-project src/Master.Rest --output-dir EF/Migrations
 // dotnet ef database update --project src/Master.App --startup-project src/Master.Rest
 
 // [Timestamp]

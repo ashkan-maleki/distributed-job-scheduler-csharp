@@ -7,7 +7,7 @@ public class Worker(string name, long version = 1)
     // public byte[] Version { get; set; }
     public string Name { get; } = name;
     public long Version { get; set; } = version;
-    public WorkerState CurrentState { get; set; } =  WorkerState.Dead;
+    public WorkerState CurrentState { get; set; } =  WorkerState.Idle;
     public DateTime LastHeartBeat { get; set; }
     public DateTime RegisteredAt { get; set; }
     
@@ -19,6 +19,14 @@ public class Worker(string name, long version = 1)
     {
         RegisteredAt = DateTime.Now;
         CurrentState = WorkerState.Registered;
+        Version++;
+    }
+
+    public void Unregister()
+    {
+        RegisteredAt = DateTime.MinValue;
+        CurrentState = WorkerState.Idle;
+        Version++;
     }
     
     public void Kill()
@@ -35,7 +43,7 @@ public class Worker(string name, long version = 1)
 
 public enum WorkerState
 {
-    Dead,
+    Idle,
     Registered,
-    
+    Dead,   
 }

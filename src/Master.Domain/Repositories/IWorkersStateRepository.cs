@@ -6,7 +6,6 @@ namespace Master.Domain.Repositories;
 
 public interface IWorkersStateRepository : IRepository
 {
-    public Task AddAsync(WorkersState workersState);
     public Task<Result<WorkersState>> GetAsync();
-    public Result<WorkersState> Get();
+    
 }

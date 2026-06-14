@@ -30,11 +30,21 @@ public class WorkerService(IWorkerRepository workerRepository, IWorkersStateRepo
 
         Worker worker = workerResult.OkResult.Value;
         worker.Register();
-        workersState.Register();
+        IResult registrationResult = workersState.Register();
+        if (registrationResult is DomainFailure domainFailure)
+        {
+            return domainFailure;
+        }
 
         IResult result = await workerRepository.UnitOfWork.SaveEntitiesAsync();
         if (result is CriticalError criticalError)
         {
+            worker.Unregister();
+            result = await workerRepository.UnitOfWork.SaveEntitiesAsync();
+            if (result is CriticalError critical)
+            {
+                return critical;
+            }
             return criticalError;
         }
 
@@ -75,28 +85,33 @@ public class WorkerService(IWorkerRepository workerRepository, IWorkersStateRepo
         }
     }
 
-    private async Task<IResult> ScaleDownAsync(int count)
-    {
-        for (int i = await workerRepository.CountAsync(); i > count; i--)
-        {
-            Result<Worker> result = await workerRepository.FirstAsync();
-            if (result.NotFound)
-            {
-                return result.NotFoundResult;
-            }
-
-            workerRepository.Remove(result.OkResult.Value);
-        }
-
-        return new Ok();
-    }
+    // private async Task<IResult> ScaleDownAsync(int count)
+    // {
+    //     for (int i = await workerRepository.CountAsync(); i > count; i--)
+    //     {
+    //         Result<Worker> result = await workerRepository.FirstAsync();
+    //         if (result.NotFound)
+    //         {
+    //             return result.NotFoundResult;
+    //         }
+    //
+    //         workerRepository.Remove(result.OkResult.Value);
+    //     }
+    //
+    //     return new Ok();
+    // }
 
     public async Task<IResult> ScaleAsync(int count)
     {
         await ScaleUpAsync(count);
-        
-        WorkersState workersState = new(count, await workerRepository.CountAsync());
-        await workersStateRepository.AddAsync(workersState);
+
+        Result<WorkersState> workerStateResult = await workersStateRepository.GetAsync();
+        if (workerStateResult.NotFound)
+        {
+            return workerStateResult.NotFoundResult;
+        }
+        WorkersState workersState = workerStateResult.OkResult.Value;
+        workersState.Update(count, await workerRepository.CountAsync());
 
         IResult result = await workerRepository.UnitOfWork.SaveEntitiesAsync();
         if (result is CriticalError criticalError)

@@ -1,18 +1,16 @@
-﻿namespace Master.Domain.Models;
+﻿using Shared.Domain.DTOs;
+
+namespace Master.Domain.Models;
 
 public class WorkersState
 {
-    private WorkersState()
-    {
-        
-    }
-
-    public WorkersState(int desiredNumberOfWorkers, int currentNumberOfWorkers)
+    public void Update(int desiredNumberOfWorkers, int currentNumberOfWorkers)
     {
         DesiredNumberOfWorkers = desiredNumberOfWorkers;
         NumberOfWorkersToRegister = desiredNumberOfWorkers - currentNumberOfWorkers;
     }
 
+    
     public int Id { get; set; }
     
     public int DesiredNumberOfWorkers { get; set; }
@@ -21,9 +19,17 @@ public class WorkersState
     public bool RegistrationAllowed => NumberOfWorkersToRegister > 0;
     public bool RegistrationNotAllowed => !RegistrationAllowed;
 
-
-    public void Register()
+    
+    
+    public IResult Register()
     {
+        if (NumberOfWorkersToRegister <= 0)
+        {
+            return new DomainFailure("No registration slots available.");
+        }
+
         NumberOfWorkersToRegister--;
+
+        return new Ok();
     }
 }
