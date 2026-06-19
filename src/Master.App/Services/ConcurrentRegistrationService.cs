@@ -29,8 +29,7 @@ public class ConcurrentRegistrationService(IServiceScopeFactory scopeFactory) : 
         {
             using IServiceScope scope = scopeFactory.CreateScope();
 
-            IWorkerService workerService =
-                scope.ServiceProvider.GetRequiredService<IWorkerService>();
+            var workerService = scope.ServiceProvider.GetRequiredService<IWorkerService>();
 
             return await workerService.RegisterAsync();
         });
