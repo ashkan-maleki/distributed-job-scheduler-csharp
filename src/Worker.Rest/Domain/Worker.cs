@@ -1,4 +1,10 @@
-﻿namespace Worker.Rest.Domain;
+﻿
+
+using Shared.Domain.DTOs;
+using IResult = Shared.Domain.DTOs.IResult;
+
+
+namespace Worker.Rest.Domain;
 
 public class Worker
 {
@@ -33,8 +39,8 @@ public class Worker
 
     public bool ShouldReportHeartBeat => HeartBeatReportedAt - DateTime.UtcNow > TimeSpan.FromSeconds(4);
     public bool ShouldNotReportHeartBeat => !ShouldReportHeartBeat;
-    public bool IsJobAssigned => JobId != Guid.Empty;
-    public bool ReadyToProcessJob => IsJobAssigned;
+    public bool HasJobAssigned => JobId != Guid.Empty;
+    public bool NotReadyToProcessJob => !HasJobAssigned;
 
     public void StartJob(Guid jobId)
     {

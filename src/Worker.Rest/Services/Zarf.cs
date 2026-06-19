@@ -1,26 +1,26 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Shared.Domain.DTOs;
-using Shared.Domain.Models;
 using Worker.Rest.Contexts;
 using Worker.Rest.EF;
 using Worker.Rest.HttpServices.Master;
-using Worker.Rest.Works;
 
 namespace Worker.Rest.Services;
 
 public class Zarf(
     ILogger<Zarf> logger,
+    IWorkerService workerService,
     IWorkerHttpClient workerHttpClient,
     IJobHttpClient jobHttpClient,
     WorkerDbContext dbContext)
 {
     public static async Task<Result<Zarf>> RegisterAsync(ILogger<Zarf> logger,
+        IWorkerService workerService,
         IWorkerHttpClient workerHttpClient,
         IJobHttpClient jobHttpClient, IDbContextFactory<WorkerDbContext> factory,
         WorkerContext context, CancellationToken stoppingToken)
     {
         await using WorkerDbContext dbContext = await factory.CreateDbContextAsync(stoppingToken);
-        Zarf zarf = new(logger, workerHttpClient, jobHttpClient, dbContext);
+        Zarf zarf = new(logger, workerService, workerHttpClient, jobHttpClient, dbContext);
         Result<Domain.Worker> result = await zarf.RegisterAsync(context, stoppingToken);
         if (result.DomainFailed)
         {
@@ -42,21 +42,7 @@ public class Zarf(
             await Task.Delay(TimeSpan.FromSeconds(1), stoppingToken);
         }
 
-        
-        Result<Domain.Worker> result = await workerHttpClient.Register();
-        if (result.DomainFailed)
-        {
-            return new DomainFailure($"Failed to register: " + result.DomainFailureResult.Message);
-        }
-        
-        Domain.Worker worker = result.OkResult.Value;
-        
-        worker.Register();
-        await dbContext.Workers.AddAsync(worker, stoppingToken);
-        await dbContext.SaveChangesAsync(stoppingToken);
-        
-        logger.LogInformation($"Registered the worker with id: {worker.Id}, named: {worker.Name}");
-        return worker;
+        return await workerService.RegisterAsync(stoppingToken);
     }
 
     private async Task StartHeartBeatAsync(WorkerContext context, Domain.Worker worker, CancellationToken stoppingToken)
@@ -101,80 +87,28 @@ public class Zarf(
             await Task.Delay(TimeSpan.FromSeconds(1), stoppingToken);
         }
 
+        _ = await workerService.AssignJobAsync(worker.Id, stoppingToken);
         
-
-        if (worker.IsJobAssigned)
-        {
-            logger.LogWarning("Worker already assigned.");
-            return;
-        }
-
-        (IContentMessage? error, Job? job) = await jobHttpClient.GetJobAsync(worker.Id, stoppingToken);
-        if (error != null)
-        {
-            logger.LogError(error.ToString());
-            return;
-        }
-
-        if (job == null)
-        {
-            logger.LogError("Instance of job is null");
-            return ;
-        }
-
-        worker.AssignJob(job.Id);
-        await dbContext.SaveChangesAsync(stoppingToken);
     }
 
     private async Task ProcessJobAsync(WorkerContext context, Domain.Worker worker, CancellationToken stoppingToken)
     {
-        if (!worker.ReadyToProcessJob)
+        while (context.MasterUnavailable)
         {
-            logger.LogError("Instance of job is not ready");
-            return;
+            await Task.Delay(TimeSpan.FromSeconds(1), stoppingToken);
         }
         
-
-        var (error, job) = await jobHttpClient.StartJobAsync(worker.Id, worker.JobId, stoppingToken);
-
-        if (error != null)
-        {
-            logger.LogError(error.ToString());
-            return;
-        }
-
-        if (job == null)
-        {
-            logger.LogError("Instance of job is null");
-            return;
-        }
-
-        await SimpleWork.Run(stoppingToken);
-        
-        worker.StartJob(job.Id);
-        await dbContext.SaveChangesAsync(stoppingToken);
+        _ = await workerService.ProcessJobAsync(worker.Id, stoppingToken);
     }
     
     private async Task FinishJobAsync(WorkerContext context, Domain.Worker worker, CancellationToken stoppingToken)
     {
+        while (context.MasterUnavailable)
+        {
+            await Task.Delay(TimeSpan.FromSeconds(1), stoppingToken);
+        }
         
-        JobCompletionRequest request = new(worker.Id, worker.JobId);
-        var (error, job) = await jobHttpClient.ResultJobAsync(request, stoppingToken);
-
-        if (error != null)
-        {
-            logger.LogError(error.ToString());
-            return;
-        }
-
-        if (job == null)
-        {
-            logger.LogError("Instance of job is null");
-            return;
-        }
-
-        worker.CompleteJob();
-        await dbContext.SaveChangesAsync(stoppingToken);
+        _ = await workerService.FinishJobAsync(worker.Id, stoppingToken);
     }
 
     
