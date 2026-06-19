@@ -19,7 +19,7 @@ public class JobService(IJobRepository jobRepository, IWorkerRepository workerRe
         IResult result = await jobRepository.UnitOfWork.SaveEntitiesAsync();
         if (result is CriticalError criticalError)
         {
-            return new CriticalError(criticalError.Message);
+            return criticalError;
         }
 
         return job;
@@ -124,40 +124,3 @@ public class JobService(IJobRepository jobRepository, IWorkerRepository workerRe
             async () => await jobRepository.GetAsync(jobId),
             (job, _) => job.Fail(workerId));
 }
-
-// private async Task<IResult<Job>> ExecuteJobCommand(
-//     Guid workerId,
-//     Func<Task<IResult<Job>>> loadJob,
-//     Func<Job, Guid, IResult> jobStateTransition
-// )
-// {
-//     IResult result = await workerRepository.GetAsync(workerId);
-//     if (result is NotFound<Worker> workerNotFound)
-//     {
-//         return new NotFound<Job>(workerNotFound.Message);
-//     }
-//
-//     result = await loadJob();
-//     if (result is NotFound<Job> jobNotFound)
-//     {
-//         return jobNotFound;
-//     }
-//
-//     Ok<Job> ok = result as Ok<Job> ?? throw new InvalidOperationException();
-//     Job job = ok.Value;
-//     result = jobStateTransition(job, workerId);
-//
-//     if (result is DomainFailure error)
-//     {
-//         return new Error<Job>(error.Message);
-//     }
-//
-//     result = await jobRepository.UnitOfWork.SaveEntitiesAsync();
-//
-//     if (result is CriticalError criticalError)
-//     {
-//         return new CriticalError<Job>(criticalError.Message);
-//     }
-//
-//     return new Ok<Job>(job);
-// }
