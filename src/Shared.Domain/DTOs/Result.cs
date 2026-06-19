@@ -107,18 +107,23 @@ public class Result<T> : Result
         return _result is Object<T>;
     }
     
+    public T? Value => _result is Object<T> @object ? @object.Value : default;
+    
     [MemberNotNullWhen(false, nameof(NotFoundResult))]
     [MemberNotNullWhen(false, nameof(DomainFailureResult))]
     [MemberNotNullWhen(false, nameof(CriticalErrorResult))]
     [MemberNotNullWhen(true, nameof(OkResult))]
+    [MemberNotNullWhen(true, nameof(Value))]
     
     public bool Ok => _result is Ok<T>;
     [MemberNotNullWhen(true, nameof(NotFoundResult))]
     [MemberNotNullWhen(false, nameof(OkResult))]
+    [MemberNotNullWhen(false, nameof(Value))]
     public bool NotFound => _result is NotFound;
     
     [MemberNotNullWhen(true, nameof(DomainFailureResult))]
     [MemberNotNullWhen(false, nameof(OkResult))]
+    [MemberNotNullWhen(false, nameof(Value))]
     public bool DomainFailed => _result is DomainFailure;
     
     [MemberNotNullWhen(true, nameof(CriticalErrorResult))]
