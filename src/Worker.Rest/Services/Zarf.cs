@@ -9,51 +9,46 @@ namespace Worker.Rest.Services;
 public class Zarf(
     ILogger<Zarf> logger,
     IWorkerService workerService,
+    IJobService jobService,
+    IMasterHealthCheckService  masterHealthCheckService,
     IWorkerHttpClient workerHttpClient,
-    IJobHttpClient jobHttpClient,
     WorkerDbContext dbContext)
 {
     public static async Task<Result<Zarf>> RegisterAsync(ILogger<Zarf> logger,
         IWorkerService workerService,
+        IJobService jobService,
+        IMasterHealthCheckService  masterHealthCheckService,
         IWorkerHttpClient workerHttpClient,
-        IJobHttpClient jobHttpClient, IDbContextFactory<WorkerDbContext> factory,
-        WorkerContext context, CancellationToken stoppingToken)
+        IDbContextFactory<WorkerDbContext> factory,
+        CancellationToken stoppingToken)
     {
         await using WorkerDbContext dbContext = await factory.CreateDbContextAsync(stoppingToken);
-        Zarf zarf = new(logger, workerService, workerHttpClient, jobHttpClient, dbContext);
-        Result<Domain.Worker> result = await zarf.RegisterAsync(context, stoppingToken);
+        Zarf zarf = new(logger, workerService, jobService, masterHealthCheckService, workerHttpClient, dbContext);
+        Result<Domain.Worker> result = await zarf.RegisterAsync(stoppingToken);
         if (result.DomainFailed)
         {
             return result.DomainFailureResult;
         }
         
-        Domain.Worker? worker = result.OkResult.Value;
+        Domain.Worker worker = result.Value;
         
-        await zarf.StartHeartBeatAsync(context, worker, stoppingToken);
-        await zarf.StartDoingJobAsync(context, worker, stoppingToken);
+        await zarf.StartHeartBeatAsync(worker, stoppingToken);
+        await zarf.StartDoingJobAsync(worker, stoppingToken);
         return zarf;
     }
 
 
-    private async Task<Result<Domain.Worker>> RegisterAsync(WorkerContext context, CancellationToken stoppingToken)
+    private async Task<Result<Domain.Worker>> RegisterAsync(CancellationToken stoppingToken)
     {
-        while (context.MasterUnavailable)
-        {
-            await Task.Delay(TimeSpan.FromSeconds(1), stoppingToken);
-        }
-
+        await masterHealthCheckService.IsMasterAvailableAsync(stoppingToken);
         return await workerService.RegisterAsync(stoppingToken);
     }
 
-    private async Task StartHeartBeatAsync(WorkerContext context, Domain.Worker worker, CancellationToken stoppingToken)
+    private async Task StartHeartBeatAsync(Domain.Worker worker, CancellationToken stoppingToken)
     {
         while (!stoppingToken.IsCancellationRequested)
         {
-            if (context.MasterUnavailable)
-            {
-                await Task.Delay(TimeSpan.FromSeconds(1), stoppingToken);
-                continue;
-            }
+            await masterHealthCheckService.IsMasterAvailableAsync(stoppingToken);
 
             if (worker.ShouldNotReportHeartBeat)
             {
@@ -70,45 +65,36 @@ public class Zarf(
         }
     }
 
-    private async Task StartDoingJobAsync(WorkerContext context, Domain.Worker worker, CancellationToken stoppingToken)
+    private async Task StartDoingJobAsync(Domain.Worker worker, CancellationToken stoppingToken)
     {
         while (!stoppingToken.IsCancellationRequested)
         {
-            await AssignJobAsync(context, worker, stoppingToken);
-            await ProcessJobAsync(context, worker, stoppingToken);
-            await FinishJobAsync(context, worker, stoppingToken);
+            await AssignJobAsync(worker, stoppingToken);
+            await ProcessJobAsync(worker, stoppingToken);
+            await FinishJobAsync(worker, stoppingToken);
         }
     }
 
-    private async Task AssignJobAsync(WorkerContext context, Domain.Worker worker, CancellationToken stoppingToken)
+    private async Task AssignJobAsync( Domain.Worker worker, CancellationToken stoppingToken)
     {
-        while (context.MasterUnavailable)
-        {
-            await Task.Delay(TimeSpan.FromSeconds(1), stoppingToken);
-        }
+        await masterHealthCheckService.IsMasterAvailableAsync(stoppingToken);
 
-        _ = await workerService.AssignJobAsync(worker.Id, stoppingToken);
+        _ = await jobService.AssignJobAsync(worker.Id, stoppingToken);
         
     }
 
-    private async Task ProcessJobAsync(WorkerContext context, Domain.Worker worker, CancellationToken stoppingToken)
+    private async Task ProcessJobAsync( Domain.Worker worker, CancellationToken stoppingToken)
     {
-        while (context.MasterUnavailable)
-        {
-            await Task.Delay(TimeSpan.FromSeconds(1), stoppingToken);
-        }
+        await masterHealthCheckService.IsMasterAvailableAsync(stoppingToken);
         
-        _ = await workerService.ProcessJobAsync(worker.Id, stoppingToken);
+        _ = await jobService.ProcessJobAsync(worker.Id, stoppingToken);
     }
     
-    private async Task FinishJobAsync(WorkerContext context, Domain.Worker worker, CancellationToken stoppingToken)
+    private async Task FinishJobAsync(Domain.Worker worker, CancellationToken stoppingToken)
     {
-        while (context.MasterUnavailable)
-        {
-            await Task.Delay(TimeSpan.FromSeconds(1), stoppingToken);
-        }
+        await masterHealthCheckService.IsMasterAvailableAsync(stoppingToken);
         
-        _ = await workerService.FinishJobAsync(worker.Id, stoppingToken);
+        _ = await jobService.FinishJobAsync(worker.Id, stoppingToken);
     }
 
     

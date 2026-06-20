@@ -8,12 +8,12 @@ using IResult = Shared.Domain.DTOs.IResult;
 namespace Worker.Rest.Services;
 
 
-public class WorkerService(IWorkerStore store, IWorkerHttpClient workHttpClient,
-    IJobHttpClient jobHttpClient, ILogger<WorkerService> logger) : IWorkerService
+public class WorkerService(IWorkerStore store, IWorkerHttpClient httpClient,
+    ILogger<WorkerService> logger) : IWorkerService
 {
     public async Task<Result<Domain.Worker>> RegisterAsync(CancellationToken stoppingToken)
     {
-        Result<Domain.Worker> result = await workHttpClient.Register();
+        Result<Domain.Worker> result = await httpClient.Register();
         if (result.DomainFailed)
         {
             return new DomainFailure($"Failed to register: " + result.DomainFailureResult.Message);
@@ -33,100 +33,34 @@ public class WorkerService(IWorkerStore store, IWorkerHttpClient workHttpClient,
         return worker;
     }
 
-    public async Task<Result<Domain.Worker>> AssignJobAsync(Guid workerId, CancellationToken stoppingToken)
+    public async Task HeartBeatAsync(Guid workerId, CancellationToken stoppingToken)
     {
-        Result<Domain.Worker> result = await store.FindAsync(workerId, stoppingToken);
-        if (result.NotFound)
+        Result<Domain.Worker> result = await httpClient.Register();
+        if (result.DomainFailed)
         {
-            return result.NotFoundResult;
+            logger.LogError($"Failed to register: " + result.DomainFailureResult.Message);
+            return;
         }
         
         Domain.Worker worker = result.Value;
-        if (worker.HasJobAssigned)
+        if (worker.ShouldNotReportHeartBeat)
         {
-            return new DomainFailure("Worker already assigned.");
+            await Task.Delay(TimeSpan.FromSeconds(1), stoppingToken);
+            return;
         }
 
-        Result<Job> jobResult = await jobHttpClient.GetJobAsync(worker.Id, stoppingToken);
-        if (jobResult.DomainFailed)
+        if (await httpClient.HeartBeat(worker.Id))
         {
-            return jobResult.DomainFailureResult;
+            worker.ReportHeartBeat();
+            logger.LogInformation("Heartbeat complete at {time}", DateTimeOffset.Now);
+            await store.UnitOfWork.SaveChangesAsync(stoppingToken);
         }
-
-        Job job = jobResult.Value;
-        worker.AssignJob(job.Id);
-        IResult saveResult = await store.UnitOfWork.SaveEntitiesAsync(stoppingToken);
-        if (saveResult is CriticalError error)
-        {
-            return error;
-        }
-        logger.LogInformation($"Assigned a job ({job.Id}) the worker with id: {worker.Id}, named: {worker.Name}");
-        return worker;
-    }
-
-    public async Task<Result<Domain.Worker>> ProcessJobAsync(Guid workerId, CancellationToken stoppingToken)
-    {
-        Result<Domain.Worker> result = await store.FindAsync(workerId, stoppingToken);
-        if (result.NotFound)
-        {
-            return result.NotFoundResult;
-        }
-        Domain.Worker worker = result.Value;
-        if (worker.NotReadyToProcessJob)
-        {
-            return new DomainFailure("Worker has not assigned a job.");
-        }
-        
-
-        Result<Job> jobResult = await jobHttpClient.StartJobAsync(worker.Id, worker.JobId, stoppingToken);
-        if (jobResult.DomainFailed)
-        {
-            return jobResult.DomainFailureResult;
-        }
-
-        Job job = jobResult.Value;
-        await SimpleWork.Run(stoppingToken);
-        
-        worker.StartJob(job.Id);
-        IResult saveResult = await store.UnitOfWork.SaveEntitiesAsync(stoppingToken);
-        if (saveResult is CriticalError error)
-        {
-            return error;
-        }
-        logger.LogInformation($"Started the job ({job.Id}) for the worker with id: {worker.Id}, named: {worker.Name}");
-        return worker;
-    }
-
-    public async Task<Result<Domain.Worker>> FinishJobAsync(Guid workerId, CancellationToken stoppingToken)
-    {
-        Result<Domain.Worker> result = await store.FindAsync(workerId, stoppingToken);
-        if (result.NotFound)
-        {
-            return result.NotFoundResult;
-        }
-        Domain.Worker worker = result.Value;
-        JobCompletionRequest request = new(worker.Id, worker.JobId);
-        Result<Job> jobResult = await jobHttpClient.ResultJobAsync(request, stoppingToken);
-        if (jobResult.DomainFailed)
-        {
-            return jobResult.DomainFailureResult;
-        }
-
-        worker.CompleteJob();
-        IResult saveResult = await store.UnitOfWork.SaveEntitiesAsync(stoppingToken);
-        if (saveResult is CriticalError error)
-        {
-            return error;
-        }
-        
-        return worker;
     }
 }
 
 public interface IWorkerService
 {
     Task<Result<Domain.Worker>> RegisterAsync(CancellationToken stoppingToken);
-    Task<Result<Domain.Worker>> AssignJobAsync(Guid workerId, CancellationToken stoppingToken);
-    Task<Result<Domain.Worker>> ProcessJobAsync(Guid workerId, CancellationToken stoppingToken);
-    Task<Result<Domain.Worker>> FinishJobAsync(Guid workerId, CancellationToken stoppingToken);
+    Task HeartBeatAsync(Guid workerId, CancellationToken stoppingToken);
+
 }
